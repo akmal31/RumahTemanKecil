@@ -1,0 +1,8 @@
+{
+  "name": "TemanKecil Official",
+  "description": "Showcase platform for mini-applications with a credit-based system, interactive AI tools, and simulated payment gateway, styled with a pristine Blue \u0026 White theme.",
+  "requestFramePermissions": [],
+  "majorCapabilities": [
+    "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
+  ]
+}
