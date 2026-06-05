@@ -263,6 +263,174 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Pricing Section (Brighter slate-900 or slate-950) */}
+      <section className="py-24 bg-slate-900 border-t border-slate-800">
+        <div className="mx-auto max-w-7xl px-6">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl font-bold text-white mb-4 font-display">
+              Pilihan Paket Token TemanKecil
+            </h2>
+            <p className="text-slate-400 max-w-2xl mx-auto">
+              Sistem pengisian saldo credit yang transparan dan fleksibel. Pilih paket token yang sesuai dengan skala kebutuhan operasional bisnis Anda.
+            </p>
+          </div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            {/* Starter Plan */}
+            <div className="bg-slate-950 border border-slate-800/80 rounded-3xl p-8 flex flex-col justify-between shadow-xl hover:border-slate-700 transition-all">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Starter</span>
+                <div className="flex items-baseline justify-start gap-1 my-4">
+                  <span className="text-sm font-medium text-slate-400">Rp</span>
+                  <span className="text-4xl font-extrabold text-white font-display">
+                    {parseInt(settings?.site_setting?.starter_price || "49000").toLocaleString("id-ID")}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mb-6 pb-6 border-b border-slate-800/60">Cocok untuk penguasaan awal dan uji coba fitur produktivitas.</p>
+                <ul className="space-y-3 text-slate-300 text-sm mb-8">
+                  <li className="flex items-center gap-2">
+                    <span className="text-indigo-400 font-bold">✓</span>
+                    <span>Dapatkan <strong className="text-white">{settings?.site_setting?.starter_credits || "5"} Token / Credits</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-indigo-400 font-bold">✓</span>
+                    <span>Akses ke semua micro-tools</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-indigo-400 font-bold">✓</span>
+                    <span>Tanpa masa kedaluwarsa</span>
+                  </li>
+                </ul>
+              </div>
+              <Link
+                href="/dashboard"
+                className="block w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-center text-xs font-bold transition-all"
+              >
+                Top-up Starter
+              </Link>
+            </div>
+
+            {/* Pro Plan */}
+            <div className="bg-gradient-to-b from-indigo-950/20 to-slate-950 border-2 border-indigo-500/80 rounded-3xl p-8 flex flex-col justify-between shadow-2xl relative">
+              <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 bg-indigo-500 text-white text-[10px] font-extrabold px-3 py-1 rounded-full uppercase tracking-wider">
+                Terpopuler
+              </div>
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-indigo-400">Pro Sprint</span>
+                <div className="flex items-baseline justify-start gap-1 my-4">
+                  <span className="text-sm font-medium text-slate-400">Rp</span>
+                  <span className="text-4xl font-extrabold text-white font-display">
+                    {parseInt(settings?.site_setting?.pro_price || "99000").toLocaleString("id-ID")}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mb-6 pb-6 border-b border-indigo-500/10">Skala ideal untuk kreator konten dan bisnis berkembang fast-paced.</p>
+                <ul className="space-y-3 text-slate-300 text-sm mb-8">
+                  <li className="flex items-center gap-2">
+                    <span className="text-indigo-400 font-bold">✓</span>
+                    <span>Dapatkan <strong className="text-white">{settings?.site_setting?.pro_credits || "25"} Token / Credits</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-indigo-400 font-bold">✓</span>
+                    <span>Prioritas pemrosesan server AI</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-indigo-400 font-bold">✓</span>
+                    <span>Akses premium ke semua rilis baru</span>
+                  </li>
+                </ul>
+              </div>
+              <Link
+                href="/dashboard"
+                className="block w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-center text-xs font-bold transition-all shadow-lg shadow-indigo-900/20"
+              >
+                Top-up Pro
+              </Link>
+            </div>
+
+            {/* Max Plan */}
+            <div className="bg-slate-950 border border-slate-800/80 rounded-3xl p-8 flex flex-col justify-between shadow-xl hover:border-slate-700 transition-all">
+              <div>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Max Elite</span>
+                <div className="flex items-baseline justify-start gap-1 my-4">
+                  <span className="text-sm font-medium text-slate-400">Rp</span>
+                  <span className="text-4xl font-extrabold text-white font-display">
+                    {parseInt(settings?.site_setting?.max_price || "179000").toLocaleString("id-ID")}
+                  </span>
+                </div>
+                <p className="text-xs text-slate-400 mb-6 pb-6 border-b border-slate-800/60">Selesaikan seluruh tumpukan tugas tanpa batas atau restriksi.</p>
+                <ul className="space-y-3 text-slate-300 text-sm mb-8">
+                  <li className="flex items-center gap-2">
+                    <span className="text-indigo-400 font-bold">✓</span>
+                    <span>Dapatkan <strong className="text-white">{settings?.site_setting?.max_credits === "-1" || settings?.site_setting?.max_credits === -1 ? "Tanpa Batas" : (settings?.site_setting?.max_credits || "Custom")} Token</strong></span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-indigo-400 font-bold">✓</span>
+                    <span>Bebas kuota penggunaan harian</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <span className="text-indigo-400 font-bold">✓</span>
+                    <span>Konsultasi deployment khusus admin</span>
+                  </li>
+                </ul>
+              </div>
+              <Link
+                href="/dashboard"
+                className="block w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-center text-xs font-bold transition-all"
+              >
+                Top-up Max
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Video & Description Tutorials Section */}
+      {(settings?.site_setting?.tutorial_youtube_url || settings?.site_setting?.tutorial_description) && (
+        <section className="py-24 bg-slate-950 border-t border-slate-800 relative overflow-hidden">
+          <div className="absolute top-1/2 right-0 w-72 h-72 bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
+          <div className="mx-auto max-w-4xl px-6 relative z-10 text-center">
+            <div className="mb-12">
+              <h2 className="text-3xl font-bold text-white mb-4 font-display">
+                Panduan & Video Tutorial Resmi
+              </h2>
+              <p className="text-slate-400 max-w-xl mx-auto">
+                Pelajari langkah-langkah taktis untuk mengoptimalkan penggunaan micro-tools kami demi melipatgandakan hasil kerja Anda.
+              </p>
+            </div>
+
+            <div className="flex flex-col bg-slate-900/40 rounded-3xl border border-slate-800/85 overflow-hidden shadow-2xl max-w-3xl mx-auto">
+              {settings?.site_setting?.tutorial_youtube_url && (
+                <div className="aspect-video w-full bg-slate-950 relative border-b border-slate-800">
+                  {(() => {
+                    let embedUrl = settings.site_setting.tutorial_youtube_url;
+                    if (embedUrl.includes("watch?v=")) {
+                      embedUrl = embedUrl.replace("watch?v=", "embed/");
+                    }
+                    return (
+                      <iframe
+                        src={embedUrl}
+                        title="Tutorial TemanKecil"
+                        className="w-full h-full"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      />
+                    );
+                  })()}
+                </div>
+              )}
+              <div className="p-6 md:p-8 text-left space-y-3">
+                <h3 className="text-lg font-bold text-white">
+                  Panduan Belajar Cepat TemanKecil
+                </h3>
+                <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-wrap font-sans">
+                  {settings?.site_setting?.tutorial_description || "Simak video tutorial di atas untuk memahami dasar-dasar ekosistem TemanKecil dan cara maksimalkan credit token Anda."}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+
       {/* Testimonial (Brighter Slate 900) */}
       <section className="py-24 bg-slate-900 border-t border-slate-800/50">
         <div className="mx-auto max-w-7xl px-6 text-center">

@@ -22,6 +22,9 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<
     "dashboard" | "tools" | "settings" | "users"
   >("dashboard");
+  const [settingsSubTab, setSettingsSubTab] = useState<
+    "branding" | "showcase" | "categories" | "testimonials" | "pricing" | "tutorials"
+  >("branding");
   const [tools, setTools] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
@@ -30,6 +33,16 @@ export default function AdminDashboard() {
     site_config: { logo: "teman kecil", headline: "", subheadline: "" },
     showcase_tools: [],
     testimonials: [],
+    site_setting: {
+      starter_price: "49000",
+      starter_credits: "5",
+      pro_price: "99000",
+      pro_credits: "25",
+      max_price: "179000",
+      max_credits: "-1",
+      tutorial_youtube_url: "",
+      tutorial_description: "",
+    },
   });
   const [isAdmin, setIsAdmin] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -112,7 +125,18 @@ export default function AdminDashboard() {
       .then(([toolsData, usersData, settingsData]) => {
         setTools(Array.isArray(toolsData) ? toolsData : []);
         setUsers(Array.isArray(usersData) ? usersData : []);
-        if (settingsData && settingsData.site_config) setSettings(settingsData);
+        if (settingsData) {
+          setSettings((prev: any) => ({
+            ...prev,
+            ...settingsData,
+            site_config: settingsData.site_config || prev.site_config,
+            testimonials: settingsData.testimonials || prev.testimonials,
+            site_setting: {
+              ...prev.site_setting,
+              ...(settingsData.site_setting || {}),
+            },
+          }));
+        }
       })
       .finally(() => {
         setLoading(false);
@@ -633,483 +657,779 @@ export default function AdminDashboard() {
 
           {activeTab === "settings" && (
             <div className="space-y-8">
-              <h2 className="text-3xl font-bold text-white font-display">
-                Site Settings
-              </h2>
+              <div>
+                <h2 className="text-3xl font-bold text-white font-display">
+                  Site Settings
+                </h2>
+                <p className="text-slate-400 text-sm mt-1">
+                  Kelola konfigurasi, showcase aplikasi, kategori, dan testimoni website.
+                </p>
+              </div>
+
+              {/* Subtabs Navigation */}
+              <div className="flex flex-wrap gap-2 bg-slate-900 border border-slate-800 p-1.5 rounded-2xl">
+                <button
+                  type="button"
+                  onClick={() => setSettingsSubTab("branding")}
+                  className={`flex-1 sm:flex-initial px-5 py-3 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                    settingsSubTab === "branding"
+                      ? "bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-900/20"
+                      : "text-slate-400 hover:text-white hover:bg-slate-800 border border-transparent"
+                  }`}
+                >
+                  Branding & Hero
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettingsSubTab("showcase")}
+                  className={`flex-1 sm:flex-initial px-5 py-3 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                    settingsSubTab === "showcase"
+                      ? "bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-900/20"
+                      : "text-slate-400 hover:text-white hover:bg-slate-805 border border-transparent"
+                  }`}
+                >
+                  Showcase Aplikasi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettingsSubTab("categories")}
+                  className={`flex-1 sm:flex-initial px-5 py-3 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                    settingsSubTab === "categories"
+                      ? "bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-900/20"
+                      : "text-slate-400 hover:text-white hover:bg-slate-805 border border-transparent"
+                  }`}
+                >
+                  Kategori Aplikasi
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettingsSubTab("testimonials")}
+                  className={`flex-1 sm:flex-initial px-5 py-3 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                    settingsSubTab === "testimonials"
+                      ? "bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-900/20"
+                      : "text-slate-400 hover:text-white hover:bg-slate-805 border border-transparent"
+                  }`}
+                >
+                  Testimoni Pengguna
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettingsSubTab("pricing")}
+                  className={`flex-1 sm:flex-initial px-5 py-3 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                    settingsSubTab === "pricing"
+                      ? "bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-900/20"
+                      : "text-slate-400 hover:text-white hover:bg-slate-805 border border-transparent"
+                  }`}
+                >
+                  Harga Token
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setSettingsSubTab("tutorials")}
+                  className={`flex-1 sm:flex-initial px-5 py-3 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                    settingsSubTab === "tutorials"
+                      ? "bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-900/20"
+                      : "text-slate-400 hover:text-white hover:bg-slate-805 border border-transparent"
+                  }`}
+                >
+                  Tutorial Video
+                </button>
+              </div>
 
               {/* Basic Info */}
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
-                <h3 className="text-lg font-bold border-b border-slate-800 pb-4">
-                  Branding & Hero
-                </h3>
+              {settingsSubTab === "branding" && (
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-in fade-in">
+                  <h3 className="text-lg font-bold border-b border-slate-800 pb-4">
+                    Branding & Hero
+                  </h3>
 
-                <div className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-bold text-slate-400 mb-2">
-                      Logo Text
-                    </label>
-                    <input
-                      value={settings.site_config?.logo || ""}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          site_config: {
-                            ...settings.site_config,
-                            logo: e.target.value,
-                          },
-                        })
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2">
+                        Logo Text
+                      </label>
+                      <input
+                        value={settings.site_config?.logo || ""}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            site_config: {
+                              ...settings.site_config,
+                              logo: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2">
+                        Favicon URL
+                      </label>
+                      <input
+                        value={settings.site_config?.favicon || ""}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            site_config: {
+                              ...settings.site_config,
+                              favicon: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2">
+                        Headline
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={settings.site_config?.headline || ""}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            site_config: {
+                              ...settings.site_config,
+                              headline: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2">
+                        Subheadline
+                      </label>
+                      <textarea
+                        rows={3}
+                        value={settings.site_config?.subheadline || ""}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            site_config: {
+                              ...settings.site_config,
+                              subheadline: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none"
+                      />
+                    </div>
+                    <button
+                      onClick={() =>
+                        handleSaveSettings("site_config", settings.site_config)
                       }
-                      className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none"
-                    />
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold mt-4"
+                    >
+                      Simpan Branding
+                    </button>
                   </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-400 mb-2">
-                      Favicon URL
-                    </label>
-                    <input
-                      value={settings.site_config?.favicon || ""}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          site_config: {
-                            ...settings.site_config,
-                            favicon: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-400 mb-2">
-                      Headline
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={settings.site_config?.headline || ""}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          site_config: {
-                            ...settings.site_config,
-                            headline: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-bold text-slate-400 mb-2">
-                      Subheadline
-                    </label>
-                    <textarea
-                      rows={3}
-                      value={settings.site_config?.subheadline || ""}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          site_config: {
-                            ...settings.site_config,
-                            subheadline: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none"
-                    />
-                  </div>
-                  <button
-                    onClick={() =>
-                      handleSaveSettings("site_config", settings.site_config)
-                    }
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold mt-4"
-                  >
-                    Simpan Branding
-                  </button>
                 </div>
-              </div>
+              )}
 
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
-                <h3 className="text-lg font-bold border-b border-slate-800 pb-4">
-                  Showcase Aplikasi (Pilih maksimal 6)
-                </h3>
-                <div className="space-y-4">
-                  <p className="text-sm text-slate-400">
-                    Pilih hingga 6 aplikasi untuk ditampilkan di halaman
-                    beranda.
-                  </p>
-                  <div className="space-y-3">
-                    {settings.showcase_tools &&
-                    settings.showcase_tools.length > 0 ? (
-                      <div className="flex flex-col gap-2">
-                        {settings.showcase_tools.map(
-                          (id: string, idx: number) => {
-                            const t = tools.find((tool: any) => tool.id === id);
-                            return (
-                              <div
-                                key={idx}
-                                className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl"
-                              >
-                                <div className="text-sm text-slate-300 font-medium">
-                                  {t ? t.title : `ID Tidak Dikenal: ${id}`}
-                                </div>
-                                <button
-                                  onClick={() => {
-                                    const newTools = [
-                                      ...settings.showcase_tools,
-                                    ];
-                                    newTools.splice(idx, 1);
-                                    setSettings({
-                                      ...settings,
-                                      showcase_tools: newTools,
-                                    });
-                                  }}
-                                  className="text-red-400 hover:text-red-300 transition-colors p-1"
-                                  title="Hapus"
+              {/* Showcase Aplikasi */}
+              {settingsSubTab === "showcase" && (
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-in fade-in">
+                  <h3 className="text-lg font-bold border-b border-slate-800 pb-4">
+                    Showcase Aplikasi (Pilih maksimal 6)
+                  </h3>
+                  <div className="space-y-4">
+                    <p className="text-sm text-slate-400">
+                      Pilih hingga 6 aplikasi untuk ditampilkan di halaman beranda.
+                    </p>
+                    <div className="space-y-3">
+                      {settings.showcase_tools &&
+                      settings.showcase_tools.length > 0 ? (
+                        <div className="flex flex-col gap-2">
+                          {settings.showcase_tools.map(
+                            (id: string, idx: number) => {
+                              const t = tools.find((tool: any) => tool.id === id);
+                              return (
+                                <div
+                                  key={idx}
+                                  className="flex items-center justify-between p-3 bg-slate-950 border border-slate-800 rounded-xl"
                                 >
-                                  <X className="w-4 h-4" />
-                                </button>
-                              </div>
-                            );
-                          },
-                        )}
-                      </div>
-                    ) : (
-                      <div className="text-sm text-slate-500 italic p-4 bg-slate-950 rounded-xl border border-dashed border-slate-800 text-center">
-                        Belum ada aplikasi yang dipilih.
-                      </div>
-                    )}
-
-                    {(!settings.showcase_tools ||
-                      settings.showcase_tools.length < 6) &&
-                      tools.length > 0 && (
-                        <div className="mt-4">
-                          <select
-                            className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer"
-                            value=""
-                            onChange={(e) => {
-                              if (e.target.value) {
-                                const newTools = [
-                                  ...(settings.showcase_tools || []),
-                                  e.target.value,
-                                ];
-                                setSettings({
-                                  ...settings,
-                                  showcase_tools: newTools,
-                                });
-                              }
-                            }}
-                          >
-                            <option value="" disabled>
-                              + Tambah Aplikasi ke Showcase
-                            </option>
-                            {tools
-                              .filter(
-                                (t) =>
-                                  !(settings.showcase_tools || []).includes(
-                                    t.id,
-                                  ),
-                              )
-                              .map((t) => (
-                                <option key={t.id} value={t.id}>
-                                  {t.title}
-                                </option>
-                              ))}
-                          </select>
+                                  <div className="text-sm text-slate-300 font-medium">
+                                    {t ? t.title : `ID Tidak Dikenal: ${id}`}
+                                  </div>
+                                  <button
+                                    onClick={() => {
+                                      const newTools = [
+                                        ...settings.showcase_tools,
+                                      ];
+                                      newTools.splice(idx, 1);
+                                      setSettings({
+                                        ...settings,
+                                        showcase_tools: newTools,
+                                      });
+                                    }}
+                                    className="text-red-400 hover:text-red-300 transition-colors p-1"
+                                    title="Hapus"
+                                  >
+                                    <X className="w-4 h-4" />
+                                  </button>
+                                </div>
+                              );
+                            },
+                          )}
+                        </div>
+                      ) : (
+                        <div className="text-sm text-slate-500 italic p-4 bg-slate-950 rounded-xl border border-dashed border-slate-800 text-center">
+                          Belum ada aplikasi yang dipilih.
                         </div>
                       )}
-                  </div>
-                  <button
-                    onClick={() =>
-                      handleSaveSettings(
-                        "showcase_tools",
-                        settings.showcase_tools,
-                      )
-                    }
-                    className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold mt-4"
-                  >
-                    Simpan Showcase
-                  </button>
-                </div>
-              </div>
 
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
-                <div className="border-b border-slate-800 pb-4 mb-4">
-                  <h3 className="text-lg font-bold">
-                    Kategori Aplikasi (Home)
-                  </h3>
-                </div>
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase">
-                      Judul Section
-                    </label>
-                    <input
-                      value={settings.categories_config?.title || ""}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          categories_config: {
-                            ...settings.categories_config,
-                            title: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm mt-1"
-                      placeholder="e.g. Kategori Aplikasi"
-                    />
-                  </div>
-                  <div>
-                    <label className="text-xs font-bold text-slate-500 uppercase">
-                      Deskripsi Section
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={settings.categories_config?.description || ""}
-                      onChange={(e) =>
-                        setSettings({
-                          ...settings,
-                          categories_config: {
-                            ...settings.categories_config,
-                            description: e.target.value,
-                          },
-                        })
-                      }
-                      className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm mt-1"
-                      placeholder="Deskripsi..."
-                    />
-                  </div>
-
-                  {settings.categories_config?.items?.map(
-                    (item: any, i: number) => (
-                      <div
-                        key={i}
-                        className="pt-4 border-t border-slate-800 space-y-3 relative"
-                      >
-                        <div className="flex justify-between items-center">
-                          <h4 className="font-semibold text-slate-300">
-                            Kategori {i + 1}
-                          </h4>
-                          <button
-                            onClick={() => {
-                              const items = [
-                                ...settings.categories_config.items,
-                              ];
-                              items.splice(i, 1);
-                              setSettings({
-                                ...settings,
-                                categories_config: {
-                                  ...settings.categories_config,
-                                  items,
-                                },
-                              });
-                            }}
-                            className="bg-red-900/50 hover:bg-red-900 text-red-500 hover:text-red-400 p-2 rounded-lg transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                        <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase">
-                            Nama Kategori
-                          </label>
-                          <input
-                            value={item.title || ""}
-                            onChange={(e) => {
-                              const items = [
-                                ...settings.categories_config.items,
-                              ];
-                              items[i].title = e.target.value;
-                              setSettings({
-                                ...settings,
-                                categories_config: {
-                                  ...settings.categories_config,
-                                  items,
-                                },
-                              });
-                            }}
-                            className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-sm mt-1"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase">
-                            Deskripsi
-                          </label>
-                          <textarea
-                            rows={2}
-                            value={item.description || ""}
-                            onChange={(e) => {
-                              const items = [
-                                ...settings.categories_config.items,
-                              ];
-                              items[i].description = e.target.value;
-                              setSettings({
-                                ...settings,
-                                categories_config: {
-                                  ...settings.categories_config,
-                                  items,
-                                },
-                              });
-                            }}
-                            className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-sm mt-1"
-                          />
-                        </div>
-                        <div>
-                          <label className="text-xs font-bold text-slate-500 uppercase">
-                            URL Gambar / Icon
-                          </label>
-                          <input
-                            value={item.image || ""}
-                            onChange={(e) => {
-                              const items = [
-                                ...settings.categories_config.items,
-                              ];
-                              items[i].image = e.target.value;
-                              setSettings({
-                                ...settings,
-                                categories_config: {
-                                  ...settings.categories_config,
-                                  items,
-                                },
-                              });
-                            }}
-                            className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-sm mt-1"
-                            placeholder="https://images.unsplash.com/..."
-                          />
-                        </div>
-                      </div>
-                    ),
-                  )}
-
-                  <div className="flex gap-4">
-                    <button
-                      onClick={() => {
-                        const items = [
-                          ...(settings.categories_config?.items || []),
-                          { title: "", description: "", image: "" },
-                        ];
-                        setSettings({
-                          ...settings,
-                          categories_config: {
-                            ...settings.categories_config,
-                            items,
-                          },
-                        });
-                      }}
-                      className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl mt-4 max-w-max flex items-center gap-2"
-                    >
-                      <Plus className="w-4 h-4" /> Tambah Kategori
-                    </button>
+                      {(!settings.showcase_tools ||
+                        settings.showcase_tools.length < 6) &&
+                        tools.length > 0 && (
+                          <div className="mt-4">
+                            <select
+                              className="w-full bg-slate-950 border border-slate-800 rounded-xl px-4 py-3 text-sm text-slate-300 focus:outline-none focus:border-indigo-500 appearance-none cursor-pointer"
+                              value=""
+                              onChange={(e) => {
+                                if (e.target.value) {
+                                  const newTools = [
+                                    ...(settings.showcase_tools || []),
+                                    e.target.value,
+                                  ];
+                                  setSettings({
+                                    ...settings,
+                                    showcase_tools: newTools,
+                                  });
+                                }
+                              }}
+                            >
+                              <option value="" disabled>
+                                + Tambah Aplikasi ke Showcase
+                              </option>
+                              {tools
+                                .filter(
+                                  (t) =>
+                                    !(settings.showcase_tools || []).includes(
+                                      t.id,
+                                    ),
+                                )
+                                .map((t) => (
+                                  <option key={t.id} value={t.id}>
+                                    {t.title}
+                                  </option>
+                                ))}
+                            </select>
+                          </div>
+                        )}
+                    </div>
                     <button
                       onClick={() =>
                         handleSaveSettings(
-                          "categories_config",
-                          settings.categories_config,
+                          "showcase_tools",
+                          settings.showcase_tools,
                         )
                       }
-                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl mt-4 max-w-max"
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold mt-4"
                     >
-                      Simpan Kategori
+                      Simpan Showcase
                     </button>
                   </div>
                 </div>
-              </div>
+              )}
 
-              <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6">
-                <div className="flex justify-between items-center border-b border-slate-800 pb-4">
-                  <h3 className="text-lg font-bold">Testimoni Pengguna</h3>
-                  <button
-                    onClick={() => {
-                      const newTesti = [
-                        ...(settings.testimonials || []),
-                        { name: "", text: "", role: "", img: "" },
-                      ];
-                      setSettings({ ...settings, testimonials: newTesti });
-                    }}
-                    className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded font-medium text-xs"
-                  >
-                    Tambah
-                  </button>
-                </div>
-                <div className="space-y-4">
-                  {settings.testimonials?.map((testi: any, i: number) => (
-                    <div
-                      key={i}
-                      className="flex gap-4 p-4 border border-slate-800 rounded-xl bg-slate-950 relative group"
-                    >
-                      <img
-                        src={
-                          testi.img ||
-                          `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`
+              {/* Kategori Aplikasi */}
+              {settingsSubTab === "categories" && (
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-in fade-in">
+                  <div className="border-b border-slate-800 pb-4 mb-4">
+                    <h3 className="text-lg font-bold">
+                      Kategori Aplikasi (Home)
+                    </h3>
+                  </div>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">
+                        Judul Section
+                      </label>
+                      <input
+                        value={settings.categories_config?.title || ""}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            categories_config: {
+                              ...settings.categories_config,
+                              title: e.target.value,
+                            },
+                          })
                         }
-                        className="w-12 h-12 rounded-full border border-slate-800 bg-slate-800"
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm mt-1"
+                        placeholder="e.g. Kategori Aplikasi"
                       />
-                      <div className="flex-1 space-y-2">
-                        <input
-                          value={testi.name || ""}
-                          onChange={(e) => {
-                            const arr = [...settings.testimonials];
-                            arr[i].name = e.target.value;
-                            setSettings({ ...settings, testimonials: arr });
-                          }}
-                          className="bg-transparent font-bold focus:outline-none w-1/3 border-b border-slate-800 py-1"
-                          placeholder="Nama..."
-                        />
-                        <input
-                          value={testi.role || ""}
-                          onChange={(e) => {
-                            const arr = [...settings.testimonials];
-                            arr[i].role = e.target.value;
-                            setSettings({ ...settings, testimonials: arr });
-                          }}
-                          className="bg-transparent text-sm text-slate-400 focus:outline-none w-1/3 border-b border-slate-800 py-1"
-                          placeholder="Role (Founder, dll)..."
-                        />
-                        <textarea
-                          value={testi.text || ""}
-                          onChange={(e) => {
-                            const arr = [...settings.testimonials];
-                            arr[i].text = e.target.value;
-                            setSettings({ ...settings, testimonials: arr });
-                          }}
-                          rows={2}
-                          className="w-full mt-2 bg-transparent text-sm focus:outline-none border-b border-slate-800 py-1"
-                          placeholder="Testimoni..."
-                        />
-                        <input
-                          value={testi.img || ""}
-                          onChange={(e) => {
-                            const arr = [...settings.testimonials];
-                            arr[i].img = e.target.value;
-                            setSettings({ ...settings, testimonials: arr });
-                          }}
-                          className="bg-transparent font-mono text-xs text-slate-500 focus:outline-none w-full border-b border-slate-800 py-1"
-                          placeholder="URL Profil image..."
-                        />
-                      </div>
+                    </div>
+                    <div>
+                      <label className="text-xs font-bold text-slate-500 uppercase">
+                        Deskripsi Section
+                      </label>
+                      <textarea
+                        rows={2}
+                        value={settings.categories_config?.description || ""}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            categories_config: {
+                              ...settings.categories_config,
+                              description: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500 text-sm mt-1"
+                        placeholder="Deskripsi..."
+                      />
+                    </div>
+
+                    {settings.categories_config?.items?.map(
+                      (item: any, i: number) => (
+                        <div
+                          key={i}
+                          className="pt-4 border-t border-slate-800 space-y-3 relative overflow-hidden"
+                        >
+                          <div className="flex justify-between items-center">
+                            <h4 className="font-semibold text-slate-300">
+                              Kategori {i + 1}
+                            </h4>
+                            <button
+                              type="button"
+                              onClick={() => {
+                                const items = [
+                                  ...settings.categories_config.items,
+                                ];
+                                items.splice(i, 1);
+                                setSettings({
+                                  ...settings,
+                                  categories_config: {
+                                    ...settings.categories_config,
+                                    items,
+                                  },
+                                });
+                              }}
+                              className="bg-red-900/50 hover:bg-red-900 text-red-500 hover:text-red-400 p-2 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase">
+                              Nama Kategori
+                            </label>
+                            <input
+                              value={item.title || ""}
+                              onChange={(e) => {
+                                const items = [
+                                  ...settings.categories_config.items,
+                                ];
+                                items[i].title = e.target.value;
+                                setSettings({
+                                  ...settings,
+                                  categories_config: {
+                                    ...settings.categories_config,
+                                    items,
+                                  },
+                                });
+                              }}
+                              className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-sm mt-1"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase">
+                              Deskripsi
+                            </label>
+                            <textarea
+                              rows={2}
+                              value={item.description || ""}
+                              onChange={(e) => {
+                                const items = [
+                                  ...settings.categories_config.items,
+                                ];
+                                items[i].description = e.target.value;
+                                setSettings({
+                                  ...settings,
+                                  categories_config: {
+                                    ...settings.categories_config,
+                                    items,
+                                  },
+                                });
+                              }}
+                              className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-sm mt-1"
+                            />
+                          </div>
+                          <div>
+                            <label className="text-xs font-bold text-slate-500 uppercase">
+                              URL Gambar / Icon
+                            </label>
+                            <input
+                              value={item.image || ""}
+                              onChange={(e) => {
+                                const items = [
+                                  ...settings.categories_config.items,
+                                ];
+                                items[i].image = e.target.value;
+                                setSettings({
+                                  ...settings,
+                                  categories_config: {
+                                    ...settings.categories_config,
+                                    items,
+                                  },
+                                });
+                              }}
+                              className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-sm mt-1"
+                              placeholder="https://images.unsplash.com/..."
+                            />
+                          </div>
+                        </div>
+                      ),
+                    )}
+
+                    <div className="flex gap-4">
                       <button
+                        type="button"
                         onClick={() => {
-                          const arr = settings.testimonials.filter(
-                            (_, idx) => idx !== i,
-                          );
-                          setSettings({ ...settings, testimonials: arr });
+                          const items = [
+                            ...(settings.categories_config?.items || []),
+                            { title: "", description: "", image: "" },
+                          ];
+                          setSettings({
+                            ...settings,
+                            categories_config: {
+                              ...settings.categories_config,
+                              items,
+                            },
+                          });
                         }}
-                        className="absolute top-4 right-4 text-slate-600 hover:text-red-400"
+                        className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-white text-sm font-bold rounded-xl mt-4 max-w-max flex items-center gap-2 cursor-pointer"
                       >
-                        ✕
+                        <Plus className="w-4 h-4" /> Tambah Kategori
+                      </button>
+                      <button
+                        onClick={() =>
+                          handleSaveSettings(
+                            "categories_config",
+                            settings.categories_config,
+                          )
+                        }
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white text-sm font-bold rounded-xl mt-4 max-w-max"
+                      >
+                        Simpan Kategori
                       </button>
                     </div>
-                  ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Testimoni Pengguna */}
+              {settingsSubTab === "testimonials" && (
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-in fade-in">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-4">
+                    <h3 className="text-lg font-bold">Testimoni Pengguna</h3>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const newTesti = [
+                          ...(settings.testimonials || []),
+                          { name: "", text: "", role: "", img: "" },
+                        ];
+                        setSettings({ ...settings, testimonials: newTesti });
+                      }}
+                      className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-white rounded font-medium text-xs cursor-pointer"
+                    >
+                      Tambah
+                    </button>
+                  </div>
+                  <div className="space-y-4">
+                    {settings.testimonials?.map((testi: any, i: number) => (
+                      <div
+                        key={i}
+                        className="flex gap-4 p-4 border border-slate-800 rounded-xl bg-slate-950 relative group"
+                      >
+                        <img
+                          src={
+                            testi.img ||
+                            `https://api.dicebear.com/7.x/avataaars/svg?seed=${i}`
+                          }
+                          className="w-12 h-12 rounded-full border border-slate-800 bg-slate-800"
+                        />
+                        <div className="flex-1 space-y-2">
+                          <input
+                            value={testi.name || ""}
+                            onChange={(e) => {
+                              const arr = [...settings.testimonials];
+                              arr[i].name = e.target.value;
+                              setSettings({ ...settings, testimonials: arr });
+                            }}
+                            className="bg-transparent font-bold focus:outline-none w-1/3 border-b border-slate-800 py-1"
+                            placeholder="Nama..."
+                          />
+                          <input
+                            value={testi.role || ""}
+                            onChange={(e) => {
+                              const arr = [...settings.testimonials];
+                              arr[i].role = e.target.value;
+                              setSettings({ ...settings, testimonials: arr });
+                            }}
+                            className="bg-transparent text-sm text-slate-400 focus:outline-none w-1/3 border-b border-slate-800 py-1"
+                            placeholder="Role (Founder, dll)..."
+                          />
+                          <textarea
+                            value={testi.text || ""}
+                            onChange={(e) => {
+                              const arr = [...settings.testimonials];
+                              arr[i].text = e.target.value;
+                              setSettings({ ...settings, testimonials: arr });
+                            }}
+                            rows={2}
+                            className="w-full mt-2 bg-transparent text-sm focus:outline-none border-b border-slate-800 py-1"
+                            placeholder="Testimoni..."
+                          />
+                          <input
+                            value={testi.img || ""}
+                            onChange={(e) => {
+                              const arr = [...settings.testimonials];
+                              arr[i].img = e.target.value;
+                              setSettings({ ...settings, testimonials: arr });
+                            }}
+                            className="bg-transparent font-mono text-xs text-slate-500 focus:outline-none w-full border-b border-slate-800 py-1"
+                            placeholder="URL Profil image..."
+                          />
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const arr = settings.testimonials.filter(
+                              (_, idx) => idx !== i,
+                            );
+                            setSettings({ ...settings, testimonials: arr });
+                          }}
+                          className="absolute top-4 right-4 text-slate-600 hover:text-red-400 cursor-pointer"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                    ))}
+                    <button
+                      onClick={() =>
+                        handleSaveSettings("testimonials", settings.testimonials)
+                      }
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold mt-4"
+                    >
+                      Simpan Testimoni
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Configure Harga Token */}
+              {settingsSubTab === "pricing" && (
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-in fade-in">
+                  <h3 className="text-lg font-bold border-b border-slate-800 pb-4">
+                    Konfigurasi Paket Token / Credit
+                  </h3>
+                  <div className="grid md:grid-cols-3 gap-6">
+                    {/* Starter Tier */}
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
+                      <h4 className="font-bold text-indigo-400 text-sm">Paket Starter</h4>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase">
+                          Jumlah Token / Credit
+                        </label>
+                        <input
+                          type="number"
+                          value={settings.site_setting?.starter_credits ?? "5"}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              site_setting: {
+                                ...settings.site_setting,
+                                starter_credits: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full bg-slate-900 border border-slate-800 py-2 px-3 rounded-xl focus:border-indigo-500 focus:outline-none text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase">
+                          Harga (IDR)
+                        </label>
+                        <input
+                          type="number"
+                          value={settings.site_setting?.starter_price ?? "49000"}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              site_setting: {
+                                ...settings.site_setting,
+                                starter_price: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full bg-slate-900 border border-slate-800 py-2 px-3 rounded-xl focus:border-indigo-500 focus:outline-none text-white text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Pro Tier */}
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
+                      <h4 className="font-bold text-indigo-400 text-sm">Paket Pro Sprint</h4>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase">
+                          Jumlah Token / Credit
+                        </label>
+                        <input
+                          type="number"
+                          value={settings.site_setting?.pro_credits ?? "25"}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              site_setting: {
+                                ...settings.site_setting,
+                                pro_credits: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full bg-slate-900 border border-slate-800 py-2 px-3 rounded-xl focus:border-indigo-500 focus:outline-none text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase">
+                          Harga (IDR)
+                        </label>
+                        <input
+                          type="number"
+                          value={settings.site_setting?.pro_price ?? "99000"}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              site_setting: {
+                                ...settings.site_setting,
+                                pro_price: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full bg-slate-900 border border-slate-800 py-2 px-3 rounded-xl focus:border-indigo-500 focus:outline-none text-white text-sm"
+                        />
+                      </div>
+                    </div>
+
+                    {/* Max Tier */}
+                    <div className="bg-slate-950 p-4 rounded-xl border border-slate-800 space-y-4">
+                      <h4 className="font-bold text-indigo-400 text-sm">Paket Max Elite</h4>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase">
+                          Jumlah Token / Credit (-1 = Tanpa Batas)
+                        </label>
+                        <input
+                          type="number"
+                          value={settings.site_setting?.max_credits ?? "-1"}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              site_setting: {
+                                ...settings.site_setting,
+                                max_credits: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full bg-slate-900 border border-slate-800 py-2 px-3 rounded-xl focus:border-indigo-500 focus:outline-none text-white text-sm"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-1.5 uppercase">
+                          Harga (IDR)
+                        </label>
+                        <input
+                          type="number"
+                          value={settings.site_setting?.max_price ?? "179000"}
+                          onChange={(e) =>
+                            setSettings({
+                              ...settings,
+                              site_setting: {
+                                ...settings.site_setting,
+                                max_price: e.target.value,
+                              },
+                            })
+                          }
+                          className="w-full bg-slate-900 border border-slate-800 py-2 px-3 rounded-xl focus:border-indigo-500 focus:outline-none text-white text-sm"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
                   <button
                     onClick={() =>
-                      handleSaveSettings("testimonials", settings.testimonials)
+                      handleSaveSettings("site_setting", settings.site_setting)
                     }
                     className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold mt-4"
                   >
-                    Simpan Testimoni
+                    Simpan Konfigurasi Token
                   </button>
                 </div>
-              </div>
+              )}
+
+              {/* Configure Tutorial */}
+              {settingsSubTab === "tutorials" && (
+                <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-in fade-in">
+                  <h3 className="text-lg font-bold border-b border-slate-800 pb-4">
+                    Konfigurasi Video & Deskripsi Tutorial Resmi
+                  </h3>
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2">
+                        YouTube Embed URL
+                      </label>
+                      <input
+                        type="text"
+                        value={settings.site_setting?.tutorial_youtube_url ?? ""}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            site_setting: {
+                              ...settings.site_setting,
+                              tutorial_youtube_url: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Contoh: https://www.youtube.com/embed/dQw4w9WgXcQ"
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2">
+                        Deskripsi Lengkap Tutorial
+                      </label>
+                      <textarea
+                        value={settings.site_setting?.tutorial_description ?? ""}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            site_setting: {
+                              ...settings.site_setting,
+                              tutorial_description: e.target.value,
+                            },
+                          })
+                        }
+                        rows={6}
+                        placeholder="Tuliskan petunjuk operasional atau deskripsi lengkap mengenai pengoperasian aplikasi TemanKecil..."
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-white"
+                      />
+                    </div>
+                    <button
+                      onClick={() =>
+                        handleSaveSettings("site_setting", settings.site_setting)
+                      }
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold mt-4"
+                    >
+                      Simpan Konfigurasi Tutorial
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           )}
         </main>

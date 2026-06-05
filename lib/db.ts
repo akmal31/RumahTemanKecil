@@ -194,6 +194,12 @@ async function ensureTablesExist(p: any) {
         );
       `);
       await client.query(`
+        CREATE TABLE IF NOT EXISTS "site_settings" (
+          "key" VARCHAR(255) PRIMARY KEY,
+          "value" TEXT NOT NULL
+        );
+      `);
+      await client.query(`
         CREATE TABLE IF NOT EXISTS "tool_stats" (
           "id" VARCHAR(255) PRIMARY KEY,
           "tool_id" VARCHAR(255) NOT NULL REFERENCES "tools"("id"),
@@ -208,6 +214,21 @@ async function ensureTablesExist(p: any) {
         ('testimonials', '[{"text": "Berkat TemanKecil, pekerjaan copywrite untuk produk ratusan SKU bisa selesai dalam 2 hari. Benar-benar game changer!", "name": "Sarah M.", "role": "Digital Marketer", "img": "https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah"}, {"text": "Invoice generator dan CRM sederhananya ngurangin pusing ngurus klien freelance. Sumpah ini UI-nya enak dan ga bikin ribet.", "name": "Deni Pratama", "role": "Freelance Designer", "img": "https://api.dicebear.com/7.x/avataaars/svg?seed=Deni"}]')
         ON CONFLICT ("key") DO NOTHING;
       `);
+      const siteSettingCheck = await client.query('SELECT COUNT(*) FROM "site_settings"');
+      if (parseInt(siteSettingCheck.rows[0].count) === 0) {
+        await client.query(`
+          INSERT INTO "site_settings" ("key", "value") VALUES
+          ('starter_price', '49000'),
+          ('starter_credits', '5'),
+          ('pro_price', '99000'),
+          ('pro_credits', '25'),
+          ('max_price', '179000'),
+          ('max_credits', '-1'),
+          ('tutorial_youtube_url', 'https://www.youtube.com/embed/dQw4w9WgXcQ'),
+          ('tutorial_description', 'Pelajari petunjuk penggunaan and tips produktivitas menggunakan instrumen TemanKecil.')
+          ON CONFLICT ("key") DO NOTHING;
+        `);
+      }
       await client.query(`
         INSERT INTO "users" ("user_id", "name", "email", "password_hash", "role", "avatar")
         VALUES ('admin_01', 'Super Admin', 'admin@temankecil.id', '$2b$10$p1YLMAWrqoUjyEzdmf2h2u5FJhmUsWD4nQN6AD4NeYZ8S9W8CLvgm', 'admin', 'https://api.dicebear.com/7.x/avataaars/svg?seed=Admin')
@@ -544,7 +565,7 @@ export const db = {
 
   async getSettings(): Promise<any> {
     const p = getPool();
-    let config = {
+    let config: any = {
       site_config: {
         logo: "teman kecil",
         favicon:
@@ -572,6 +593,16 @@ export const db = {
           },
         ],
       },
+      site_setting: {
+        starter_price: "49000",
+        starter_credits: "5",
+        pro_price: "99000",
+        pro_credits: "25",
+        max_price: "179000",
+        max_credits: "-1",
+        tutorial_youtube_url: "https://www.youtube.com/embed/dQw4w9WgXcQ",
+        tutorial_description: "Pelajari petunjuk penggunaan and tips produktivitas menggunakan instrumen TemanKecil.",
+      }
     };
     if (p) {
       await ensureTablesExist(p);
@@ -583,6 +614,16 @@ export const db = {
               typeof r.value === "string" ? JSON.parse(r.value) : r.value),
         );
       } catch (e) {}
+
+      try {
+        const res_site = await p.query("SELECT key, value FROM site_settings");
+        if (res_site.rows.length > 0) {
+          config.site_setting = config.site_setting || {};
+          res_site.rows.forEach((r: any) => {
+            config.site_setting[r.key] = r.value;
+          });
+        }
+      } catch (e) {}
     }
     return config;
   },
@@ -592,11 +633,21 @@ export const db = {
     if (p) {
       await ensureTablesExist(p);
       try {
-        await p.query(
-          `INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP`,
-          [key, JSON.stringify(value)],
-        );
-        return true;
+        if (key === "site_setting" || key === "site_settings") {
+          for (const [k, v] of Object.entries(value)) {
+            await p.query(
+              `INSERT INTO site_settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value`,
+              [k, String(v)],
+            );
+          }
+          return true;
+        } else {
+          await p.query(
+            `INSERT INTO settings (key, value) VALUES ($1, $2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value, updated_at = CURRENT_TIMESTAMP`,
+            [key, JSON.stringify(value)],
+          );
+          return true;
+        }
       } catch (e) {}
     }
     return false; // Dummy DB doesn't support persisting settings easily, so not returning false but no-oping effectively unless we add it to memoryDb. We'll just return true.

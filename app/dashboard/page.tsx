@@ -2,7 +2,7 @@
 import { Navbar } from "@/components/Navbar";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { User, Settings, Shield, HardDrive, KeyRound } from "lucide-react";
+import { User, Settings, Shield, HardDrive, KeyRound, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 export default function Dashboard() {
@@ -18,12 +18,84 @@ export default function Dashboard() {
   const [toolsCount, setToolsCount] = useState(0);
   const [saveMessage, setSaveMessage] = useState("");
 
+  const [settings, setSettings] = useState<any>({
+    site_setting: {
+      starter_price: "49000",
+      starter_credits: "5",
+      pro_price: "99000",
+      pro_credits: "25",
+      max_price: "179000",
+      max_credits: "-1",
+    }
+  });
+  const [selectedPackage, setSelectedPackage] = useState<"starter" | "pro" | "max">("starter");
+  const [isProcessingPurchase, setIsProcessingPurchase] = useState(false);
+  const [purchaseSuccessMessage, setPurchaseSuccessMessage] = useState("");
+  const [purchaseError, setPurchaseError] = useState("");
+
+  const handleReloadSession = async () => {
+    const res = await fetch("/api/auth/session", { cache: "no-store" });
+    const sessionData = await res.json();
+    if (sessionData.authenticated) {
+      setUser(sessionData.user);
+    }
+  };
+
+  const handlePurchaseTokens = async () => {
+    setIsProcessingPurchase(true);
+    setPurchaseError("");
+    setPurchaseSuccessMessage("");
+    try {
+      let creditsToAdd = 0;
+      let price = 0;
+      let packageName = "";
+
+      if (selectedPackage === "starter") {
+        creditsToAdd = parseInt(settings?.site_setting?.starter_credits || "5");
+        price = parseInt(settings?.site_setting?.starter_price || "49000");
+        packageName = "Starter";
+      } else if (selectedPackage === "pro") {
+        creditsToAdd = parseInt(settings?.site_setting?.pro_credits || "25");
+        price = parseInt(settings?.site_setting?.pro_price || "99000");
+        packageName = "Pro Sprint";
+      } else {
+        const mc = parseInt(settings?.site_setting?.max_credits || "-1");
+        creditsToAdd = mc === -1 ? 100 : mc; // Give 100 tokens as simulation for unlimited
+        price = parseInt(settings?.site_setting?.max_price || "179000");
+        packageName = mc === -1 ? "Max Elite (Unlimited - 100 Saldo)" : "Max Elite";
+      }
+
+      const newCredits = (user.credit || 0) + creditsToAdd;
+      
+      const res = await fetch("/api/users", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.userId,
+          credit: newCredits
+        })
+      });
+      
+      if (res.ok) {
+        setPurchaseSuccessMessage(`Sukses! Pembelian simulasi paket ${packageName} senilai Rp ${price.toLocaleString("id-ID")} berhasil. Ditambahkan ${creditsToAdd} token ke saldo Anda.`);
+        await handleReloadSession();
+      } else {
+        setPurchaseError("Gagal memproses pembelian simulasi.");
+      }
+    } catch (e) {
+      setPurchaseError("Terjadi kesalahan koneksi.");
+    } finally {
+      setIsProcessingPurchase(false);
+    }
+  };
+
   useEffect(() => {
     Promise.all([
       fetch("/api/auth/session", { cache: "no-store" }).then((r) => r.json()),
       fetch("/api/tools", { cache: "no-store" }).then((r) => r.json()),
+      fetch("/api/settings", { cache: "no-store" }).then((r) => r.json()),
     ])
-      .then(([sessionData, toolsData]) => {
+      .then(([sessionData, toolsData, settingsData]) => {
         if (!sessionData.authenticated) {
           router.replace("/login");
         } else {
@@ -34,6 +106,16 @@ export default function Dashboard() {
             password: "",
           });
           setToolsCount(Array.isArray(toolsData) ? toolsData.length : 0);
+          if (settingsData) {
+            setSettings((prev: any) => ({
+              ...prev,
+              ...settingsData,
+              site_setting: {
+                ...prev.site_setting,
+                ...(settingsData.site_setting || {}),
+              },
+            }));
+          }
         }
       })
       .catch((e) => {
@@ -241,6 +323,114 @@ export default function Dashboard() {
               </div>
               <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center">
                 <HardDrive className="w-6 h-6 text-indigo-400" />
+              </div>
+            </div>
+
+            {/* Token & Credit Management Card with simulator */}
+            <div className="bg-slate-900 border border-slate-800 rounded-2xl p-6 shadow-xl space-y-4">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="text-sm font-medium text-slate-400 mb-1">
+                    Sisa Token Anda
+                  </p>
+                  <p className="text-3xl font-display font-bold md:text-4xl text-indigo-400">
+                    {user.credit || 0} <span className="text-xs text-slate-500 font-sans tracking-normal font-medium">Credit</span>
+                  </p>
+                </div>
+                <div className="w-12 h-12 rounded-xl bg-indigo-500/10 flex items-center justify-center">
+                  <Sparkles className="w-6 h-6 text-indigo-400" />
+                </div>
+              </div>
+              
+              <div className="border-t border-slate-800/80 pt-4 space-y-4">
+                <p className="text-xs font-bold text-slate-400 uppercase tracking-wide">Pilih Paket Token (Simulasi)</p>
+                
+                <div className="space-y-3">
+                  <div className="grid grid-cols-1 gap-2">
+                    {/* Starter Option */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPackage("starter");
+                        setPurchaseError("");
+                        setPurchaseSuccessMessage("");
+                      }}
+                      className={`flex justify-between items-center p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                        selectedPackage === "starter"
+                          ? "bg-indigo-950/40 border-indigo-500"
+                          : "bg-slate-950/40 border-slate-800 hover:border-slate-700"
+                      }`}
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-white">Starter Paket</p>
+                        <p className="text-[11px] text-slate-400">{settings?.site_setting?.starter_credits || "5"} Credits</p>
+                      </div>
+                      <p className="text-xs font-bold text-indigo-400">Rp {parseInt(settings?.site_setting?.starter_price || "49000").toLocaleString("id-ID")}</p>
+                    </button>
+
+                    {/* Pro Option */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPackage("pro");
+                        setPurchaseError("");
+                        setPurchaseSuccessMessage("");
+                      }}
+                      className={`flex justify-between items-center p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                        selectedPackage === "pro"
+                          ? "bg-indigo-950/40 border-indigo-500"
+                          : "bg-slate-950/40 border-slate-800 hover:border-slate-700"
+                      }`}
+                    >
+                      <div>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs font-bold text-white">Pro Sprint</p>
+                          <span className="bg-indigo-600 text-white text-[8px] font-extrabold px-1.5 py-0.5 rounded-full uppercase">HOT</span>
+                        </div>
+                        <p className="text-[11px] text-slate-400">{settings?.site_setting?.pro_credits || "25"} Credits</p>
+                      </div>
+                      <p className="text-xs font-bold text-indigo-400">Rp {parseInt(settings?.site_setting?.pro_price || "99000").toLocaleString("id-ID")}</p>
+                    </button>
+
+                    {/* Max Option */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setSelectedPackage("max");
+                        setPurchaseError("");
+                        setPurchaseSuccessMessage("");
+                      }}
+                      className={`flex justify-between items-center p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                        selectedPackage === "max"
+                          ? "bg-indigo-950/40 border-indigo-500"
+                          : "bg-slate-950/40 border-slate-800 hover:border-slate-700"
+                      }`}
+                    >
+                      <div>
+                        <p className="text-xs font-bold text-white">Max Elite Plan</p>
+                        <p className="text-[11px] text-slate-400 border-slate-800">
+                          {settings?.site_setting?.max_credits === "-1" || settings?.site_setting?.max_credits === -1 ? "Tanpa Batas" : `${settings?.site_setting?.max_credits || "Unlimited"} Credits`}
+                        </p>
+                      </div>
+                      <p className="text-xs font-bold text-indigo-400">Rp {parseInt(settings?.site_setting?.max_price || "179000").toLocaleString("id-ID")}</p>
+                    </button>
+                  </div>
+
+                  {purchaseError && (
+                    <p className="text-xs text-red-400 font-medium">{purchaseError}</p>
+                  )}
+                  {purchaseSuccessMessage && (
+                    <p className="text-xs text-emerald-400 font-bold leading-relaxed">{purchaseSuccessMessage}</p>
+                  )}
+
+                  <button
+                    onClick={handlePurchaseTokens}
+                    disabled={isProcessingPurchase}
+                    className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-center text-xs font-bold transition-all cursor-pointer shadow-md shadow-indigo-950"
+                  >
+                    {isProcessingPurchase ? "Memproses..." : "Beli Token (Simulasi)"}
+                  </button>
+                </div>
               </div>
             </div>
 
