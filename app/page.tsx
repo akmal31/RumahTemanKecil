@@ -384,53 +384,6 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Video & Description Tutorials Section */}
-      {(settings?.site_setting?.tutorial_youtube_url || settings?.site_setting?.tutorial_description) && (
-        <section className="py-24 bg-slate-950 border-t border-slate-800 relative overflow-hidden">
-          <div className="absolute top-1/2 right-0 w-72 h-72 bg-indigo-600/5 blur-[120px] rounded-full pointer-events-none" />
-          <div className="mx-auto max-w-4xl px-6 relative z-10 text-center">
-            <div className="mb-12">
-              <h2 className="text-3xl font-bold text-white mb-4 font-display">
-                Panduan & Video Tutorial Resmi
-              </h2>
-              <p className="text-slate-400 max-w-xl mx-auto">
-                Pelajari langkah-langkah taktis untuk mengoptimalkan penggunaan micro-tools kami demi melipatgandakan hasil kerja Anda.
-              </p>
-            </div>
-
-            <div className="flex flex-col bg-slate-900/40 rounded-3xl border border-slate-800/85 overflow-hidden shadow-2xl max-w-3xl mx-auto">
-              {settings?.site_setting?.tutorial_youtube_url && (
-                <div className="aspect-video w-full bg-slate-950 relative border-b border-slate-800">
-                  {(() => {
-                    let embedUrl = settings.site_setting.tutorial_youtube_url;
-                    if (embedUrl.includes("watch?v=")) {
-                      embedUrl = embedUrl.replace("watch?v=", "embed/");
-                    }
-                    return (
-                      <iframe
-                        src={embedUrl}
-                        title="Tutorial TemanKecil"
-                        className="w-full h-full"
-                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                        allowFullScreen
-                      />
-                    );
-                  })()}
-                </div>
-              )}
-              <div className="p-6 md:p-8 text-left space-y-3">
-                <h3 className="text-lg font-bold text-white">
-                  Panduan Belajar Cepat TemanKecil
-                </h3>
-                <p className="text-sm text-slate-400 leading-relaxed whitespace-pre-wrap font-sans">
-                  {settings?.site_setting?.tutorial_description || "Simak video tutorial di atas untuk memahami dasar-dasar ekosistem TemanKecil dan cara maksimalkan credit token Anda."}
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Testimonial (Brighter Slate 900) */}
       <section className="py-24 bg-slate-900 border-t border-slate-800/50">
         <div className="mx-auto max-w-7xl px-6 text-center">
