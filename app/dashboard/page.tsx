@@ -424,11 +424,10 @@ export default function Dashboard() {
                   )}
 
                   <button
-                    onClick={handlePurchaseTokens}
-                    disabled={isProcessingPurchase}
-                    className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white rounded-xl text-center text-xs font-bold transition-all cursor-pointer shadow-md shadow-indigo-950"
+                    onClick={() => router.push(`/checkout?pkg=${selectedPackage}`)}
+                    className="w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-center text-xs font-bold transition-all cursor-pointer shadow-md shadow-indigo-900/20"
                   >
-                    {isProcessingPurchase ? "Memproses..." : "Beli Token (Simulasi)"}
+                    Lanjutkan ke Pembayaran ➚
                   </button>
                 </div>
               </div>

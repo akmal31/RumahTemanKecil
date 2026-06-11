@@ -15,12 +15,13 @@ import {
   Users,
   Menu,
   X,
+  CreditCard,
 } from "lucide-react";
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<
-    "dashboard" | "tools" | "settings" | "users"
+    "dashboard" | "tools" | "settings" | "users" | "landing_page" | "transactions"
   >("dashboard");
   const [settingsSubTab, setSettingsSubTab] = useState<
     "branding" | "showcase" | "categories" | "testimonials" | "pricing" | "tutorials"
@@ -89,6 +90,49 @@ export default function AdminDashboard() {
     name: "",
     credit: 0,
   });
+
+  const [landingPages, setLandingPages] = useState<any[]>([]);
+  const [transactions, setTransactions] = useState<any[]>([]);
+  const [showLandingForm, setShowLandingForm] = useState(false);
+  const [isEditingLanding, setIsEditingLanding] = useState(false);
+  const [landingFormData, setLandingFormData] = useState({
+    slug: "",
+    htmlContent: "",
+  });
+
+  const fetchLandingPages = async () => {
+    try {
+      const res = await fetch("/api/settings/landing", { cache: "no-store" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setLandingPages(data.landingPages || []);
+      }
+    } catch (e) {
+      console.error("Gagal mengambil data landing pages", e);
+    }
+  };
+
+  const fetchTransactions = async () => {
+    try {
+      const res = await fetch("/api/settings/transactions", { cache: "no-store" });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setTransactions(data.transactions || []);
+      }
+    } catch (e) {
+      console.error("Gagal mengambil logs transaksi", e);
+    }
+  };
+
+  useEffect(() => {
+    if (activeTab === "landing_page") {
+      /* eslint-disable-next-line react-hooks/set-state-in-effect */
+      fetchLandingPages();
+    } else if (activeTab === "transactions") {
+      /* eslint-disable-next-line react-hooks/set-state-in-effect */
+      fetchTransactions();
+    }
+  }, [activeTab]);
 
   useEffect(() => {
     fetch("/api/auth/session", { cache: "no-store" })
@@ -299,11 +343,23 @@ export default function AdminDashboard() {
             >
               <SettingsIcon className="w-5 h-5" /> Site Settings
             </button>
-            <button
+             <button
               onClick={() => setActiveTab("users")}
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === "users" ? "bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-900/20" : "text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent"}`}
             >
               <Users className="w-5 h-5" /> Users
+            </button>
+            <button
+              onClick={() => setActiveTab("landing_page")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === "landing_page" ? "bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-900/20" : "text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent"}`}
+            >
+              <LayoutDashboard className="w-5 h-5" /> Landing Pages
+            </button>
+            <button
+              onClick={() => setActiveTab("transactions")}
+              className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === "transactions" ? "bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-900/20" : "text-slate-400 hover:text-white hover:bg-slate-900 border border-transparent"}`}
+            >
+              <CreditCard className="w-5 h-5" /> Log Transaksi
             </button>
           </nav>
         </aside>
@@ -319,7 +375,13 @@ export default function AdminDashboard() {
                   ? "Dashboard"
                   : activeTab === "tools"
                     ? "Aplikasi & Tools"
-                    : "Site Settings"}
+                    : activeTab === "settings"
+                      ? "Site Settings"
+                      : activeTab === "users"
+                        ? "Users"
+                        : activeTab === "landing_page"
+                          ? "Landing Pages"
+                          : "Log Transaksi"}
               </span>
             </div>
             <button
@@ -372,6 +434,24 @@ export default function AdminDashboard() {
                 className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === "users" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"}`}
               >
                 <Users className="w-5 h-5" /> Users
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab("landing_page");
+                  setIsMobileAdminMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === "landing_page" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"}`}
+              >
+                <LayoutDashboard className="w-5 h-5" /> Landing Pages
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab("transactions");
+                  setIsMobileAdminMenuOpen(false);
+                }}
+                className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl font-medium transition-colors ${activeTab === "transactions" ? "bg-indigo-600 text-white" : "text-slate-400 hover:text-white hover:bg-slate-800"}`}
+              >
+                <CreditCard className="w-5 h-5" /> Log Transaksi
               </button>
             </div>
           )}
@@ -1430,6 +1510,343 @@ export default function AdminDashboard() {
                   </div>
                 </div>
               )}
+            </div>
+          )}
+
+          {activeTab === "landing_page" && (
+            <div className="space-y-8 animate-in fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-3xl font-bold text-white font-display">
+                    Landing Page Creator
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">
+                    Buat landing page kustom dengan mengunggah HTML dan menentukan target slug url.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setLandingFormData({ slug: "", htmlContent: "" });
+                    setIsEditingLanding(false);
+                    setShowLandingForm(true);
+                  }}
+                  className="px-5 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold text-sm rounded-xl transition-all shadow-lg shadow-indigo-900/20 self-start"
+                >
+                  + Buat Landing Page Baru
+                </button>
+              </div>
+
+              {/* LP Form Modal/Section */}
+              {showLandingForm && (
+                <div className="p-6 bg-slate-900 border border-slate-800 rounded-3xl space-y-4">
+                  <div className="flex justify-between items-center border-b border-slate-800 pb-3">
+                    <h3 className="text-lg font-bold text-indigo-400">
+                      {isEditingLanding ? "Edit Landing Page" : "Buat Landing Page Baru"}
+                    </h3>
+                    <button
+                      onClick={() => setShowLandingForm(false)}
+                      className="text-slate-500 hover:text-white-400 text-sm"
+                    >
+                      ✕ Close
+                    </button>
+                  </div>
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      try {
+                        const res = await fetch("/api/settings/landing", {
+                          method: "POST",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify(landingFormData),
+                        });
+                        const data = await res.json();
+                        if (res.ok && data.success) {
+                          setSuccessPopup({ isOpen: true, message: "Landing page berhasil disimpan!" });
+                          setTimeout(() => setSuccessPopup(null), 3000);
+                          setShowLandingForm(false);
+                          fetchLandingPages();
+                        } else {
+                          alert(data.error || "Gagal menyimpan");
+                        }
+                      } catch (err) {
+                        alert("Terjadi kesalahan");
+                      }
+                    }}
+                    className="space-y-4"
+                  >
+                    <div className="grid grid-cols-1 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-2 uppercase">
+                          Slug URL (Tanpa karakter &quot;/&quot; di awal/akhir)
+                        </label>
+                        <div className="flex gap-2 items-center">
+                          <span className="text-sm font-mono text-slate-500 bg-slate-950 px-3 py-2.5 rounded-lg border border-slate-800/80">
+                            /
+                          </span>
+                          <input
+                            required
+                            disabled={isEditingLanding}
+                            type="text"
+                            value={landingFormData.slug}
+                            onChange={(e) =>
+                              setLandingFormData({
+                                ...landingFormData,
+                                slug: e.target.value.toLowerCase().trim().replace(/[^a-z0-9-_]/g, ""),
+                              })
+                            }
+                            placeholder="contoh: promo-special"
+                            className="w-full bg-slate-950 border border-slate-800 py-2.5 px-3 rounded-xl focus:border-indigo-500 focus:outline-none"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="block text-xs font-bold text-slate-400 mb-2 uppercase">
+                          Konten HTML Landing Page
+                        </label>
+                        <span className="block text-xs text-slate-500 mb-2">
+                          Tips: Anda bisa mengunggah berkas HTML atau langsung mengetik syntax kode di textarea.
+                        </span>
+                        <div className="flex flex-col gap-3">
+                          <input
+                            type="file"
+                            accept=".html,.htm"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              if (file) {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                  setLandingFormData({
+                                    ...landingFormData,
+                                    htmlContent: event.target?.result as string,
+                                  });
+                                };
+                                reader.readAsText(file);
+                              }
+                            }}
+                            className="text-xs text-slate-400 file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-indigo-900/30 file:text-indigo-400 hover:file:bg-indigo-900/40"
+                          />
+                          <textarea
+                            required
+                            value={landingFormData.htmlContent}
+                            onChange={(e) =>
+                              setLandingFormData({ ...landingFormData, htmlContent: e.target.value })
+                            }
+                            rows={12}
+                            className="w-full bg-slate-950 font-mono text-xs border border-slate-800 p-4 rounded-xl focus:border-indigo-500 focus:outline-none text-slate-300"
+                            placeholder="Paste kode <html> disini..."
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex gap-2 justify-end pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowLandingForm(false)}
+                        className="px-5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-sm font-bold"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        type="submit"
+                        className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl text-sm"
+                      >
+                        Simpan Landing Page
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              )}
+
+              {/* Landing Pages Table */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+                <div className="p-6 border-b border-slate-800 bg-slate-950/35">
+                  <h3 className="font-bold text-white">Daftar Landing Page Aktif</h3>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-300">
+                    <thead className="bg-slate-950/60 uppercase text-xs font-bold text-slate-500 border-b border-slate-800">
+                      <tr>
+                        <th className="px-6 py-4">Target URL/Slug</th>
+                        <th className="px-6 py-4">Ukuran Konten</th>
+                        <th className="px-6 py-4">Tanggal Diperbarui</th>
+                        <th className="px-6 py-4 text-right">Aksi</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-850">
+                      {landingPages.length === 0 ? (
+                        <tr>
+                          <td colSpan={4} className="px-6 py-12 text-center text-slate-500">
+                            Belum ada landing page yang dibuat. Klik tombol diatas untuk membuat.
+                          </td>
+                        </tr>
+                      ) : (
+                        landingPages.map((lp) => (
+                          <tr key={lp.slug} className="hover:bg-slate-850/50 transition-colors">
+                            <td className="px-6 py-4 font-semibold text-white">
+                              <a
+                                href={`/${lp.slug}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-indigo-400 hover:underline flex items-center gap-1.5"
+                              >
+                                /{lp.slug} <span className="text-xs text-slate-500">➚</span>
+                              </a>
+                            </td>
+                            <td className="px-6 py-4 font-mono text-xs text-slate-400">
+                              {(lp.htmlContent?.length || 0).toLocaleString()} bytes
+                            </td>
+                            <td className="px-6 py-4 text-slate-400 text-xs">
+                              {new Date(lp.updatedAt || lp.createdAt).toLocaleDateString("id-ID", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit",
+                              })}
+                            </td>
+                            <td className="px-6 py-4 text-right space-x-2">
+                              <button
+                                onClick={() => {
+                                  setLandingFormData({ slug: lp.slug, htmlContent: lp.htmlContent });
+                                  setIsEditingLanding(true);
+                                  setShowLandingForm(true);
+                                }}
+                                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-bold rounded-lg transition-colors"
+                              >
+                                Edit
+                              </button>
+                              <button
+                                onClick={() => {
+                                  setConfirmDialog({
+                                    isOpen: true,
+                                    title: "Hapus Landing Page?",
+                                    message: `Apakah Anda yakin ingin menghapus landing page dengan slug /${lp.slug}? Tindakan ini tidak dapat dibatalkan.`,
+                                    onConfirm: async () => {
+                                      try {
+                                        const res = await fetch("/api/settings/landing", {
+                                          method: "DELETE",
+                                          headers: { "Content-Type": "application/json" },
+                                          body: JSON.stringify({ slug: lp.slug }),
+                                        });
+                                        if (res.ok) {
+                                          showSuccess("Landing page berhasil dihapus");
+                                          fetchLandingPages();
+                                        }
+                                      } catch (err) {}
+                                      setConfirmDialog(null);
+                                    },
+                                  });
+                                }}
+                                className="px-3 py-1.5 bg-red-950/40 border border-red-900/30 hover:bg-red-950 text-red-400 text-xs font-bold rounded-lg transition-colors"
+                              >
+                                Hapus
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {activeTab === "transactions" && (
+            <div className="space-y-8 animate-in fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div>
+                  <h2 className="text-3xl font-bold text-white font-display">
+                    Log Transaksi & Pembelian Token
+                  </h2>
+                  <p className="text-slate-400 text-sm mt-1">
+                    Ringkasan riwayat top-up token dari dashboard maupun landing page eksternal.
+                  </p>
+                </div>
+                <div className="flex gap-4">
+                  <div className="text-right bg-slate-900/40 border border-slate-800 px-4 py-2.5 rounded-xl">
+                    <span className="block text-[10px] uppercase font-bold text-slate-500">Total Penjualan</span>
+                    <span className="font-bold text-emerald-400 text-sm">
+                      Rp {transactions.reduce((acc, curr) => acc + (curr.status === "completed" ? curr.amount : 0), 0).toLocaleString("id-ID")}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Transactions Log Section */}
+              <div className="bg-slate-900 border border-slate-800 rounded-3xl overflow-hidden shadow-2xl">
+                <div className="p-6 border-b border-slate-800 bg-slate-950/35 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div>
+                    <h3 className="font-bold text-white">Daftar Transaksi Masuk</h3>
+                    <p className="text-slate-400 text-xs mt-0.5">
+                      Menampilkan seluruh aktivitas top-up saldo dan transaksi pembayaran.
+                    </p>
+                  </div>
+                </div>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm text-slate-300">
+                    <thead className="bg-slate-950/60 uppercase text-xs font-bold text-slate-500 border-b border-slate-800">
+                      <tr>
+                        <th className="px-6 py-4">ID Transaksi</th>
+                        <th className="px-6 py-4">Pembeli</th>
+                        <th className="px-6 py-4">Paket / Token</th>
+                        <th className="px-6 py-4">Jumlah Bayar</th>
+                        <th className="px-6 py-4">Sumber</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4">Tanggal dibuat</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-850">
+                      {transactions.length === 0 ? (
+                        <tr>
+                          <td colSpan={7} className="px-6 py-12 text-center text-slate-500">
+                            Belum ada riwayat transaksi yang masuk.
+                          </td>
+                        </tr>
+                      ) : (
+                        transactions.map((tx) => (
+                          <tr key={tx.id} className="hover:bg-slate-850/50 transition-colors">
+                            <td className="px-6 py-4 font-mono text-xs text-slate-400">{tx.id}</td>
+                            <td className="px-6 py-4">
+                              <div className="font-semibold text-white">{tx.name}</div>
+                              <div className="text-xs text-slate-400">{tx.email}</div>
+                              {tx.phone && <div className="text-[10px] text-slate-500">{tx.phone}</div>}
+                            </td>
+                            <td className="px-6 py-4">
+                              <div className="font-semibold text-white">{tx.packageName}</div>
+                              <div className="text-xs text-slate-400">+{tx.credits} Credits</div>
+                            </td>
+                            <td className="px-6 py-4 font-bold text-white">
+                              Rp {tx.amount.toLocaleString("id-ID")}
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${tx.source === "landing" ? "bg-amber-950/50 text-amber-300 border border-amber-900/30" : "bg-teal-950/50 text-teal-300 border border-teal-900/30"}`}>
+                                {tx.source === "landing" ? "Landing Page" : "Dashboard"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4">
+                              <span className={`px-2 py-1 rounded-lg text-xs font-semibold ${tx.status === "completed" ? "bg-emerald-950/60 text-emerald-400 border border-emerald-900/10" : "bg-slate-950/60 text-slate-400 border border-slate-900/10"}`}>
+                                {tx.status === "completed" ? "Selesai" : "Menunggu"}
+                              </span>
+                            </td>
+                            <td className="px-6 py-4 text-xs text-slate-400">
+                              {new Date(tx.createdAt).toLocaleString("id-ID", {
+                                year: "numeric",
+                                month: "short",
+                                day: "numeric",
+                                hour: "2-digit",
+                                minute: "2-digit"
+                              })}
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
             </div>
           )}
         </main>
