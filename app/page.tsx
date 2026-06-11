@@ -1,5 +1,6 @@
 "use client";
 import { Navbar } from "@/components/Navbar";
+import Footer from "@/components/Footer";
 import Link from "next/link";
 import { ArrowRight, Sparkles, LayoutGrid, Users } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -428,12 +429,7 @@ export default function Home() {
       </section>
 
       {/* Footer */}
-      <footer className="py-12 bg-slate-950 border-t border-slate-800 text-center text-slate-500 text-sm">
-        <p>
-          &copy; 2026 TemanKecil AI Platform. Dirancang khusus untuk Profesional
-          dan Bisnis.
-        </p>
-      </footer>
+      <Footer />
     </div>
   );
 }

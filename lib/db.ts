@@ -174,6 +174,9 @@ async function ensureTablesExist(p: any) {
         ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "credits" INTEGER NOT NULL DEFAULT 0;
       `);
       await client.query(`
+        ALTER TABLE "users" ADD COLUMN IF NOT EXISTS "is_logged_in" BOOLEAN NOT NULL DEFAULT FALSE;
+      `);
+      await client.query(`
         CREATE TABLE IF NOT EXISTS "tools" (
           "id" VARCHAR(255) PRIMARY KEY,
           "title" VARCHAR(255) NOT NULL,
@@ -205,6 +208,28 @@ async function ensureTablesExist(p: any) {
           "tool_id" VARCHAR(255) NOT NULL REFERENCES "tools"("id"),
           "views" INTEGER NOT NULL DEFAULT 0,
           "last_accessed" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "landing_pages" (
+          "slug" VARCHAR(255) PRIMARY KEY,
+          "html_content" TEXT NOT NULL,
+          "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+          "updated_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      await client.query(`
+        CREATE TABLE IF NOT EXISTS "transactions" (
+          "id" VARCHAR(255) PRIMARY KEY,
+          "name" VARCHAR(255) NOT NULL,
+          "email" VARCHAR(255) NOT NULL,
+          "phone" VARCHAR(255) NOT NULL,
+          "package_name" VARCHAR(255) NOT NULL,
+          "credits" INTEGER NOT NULL,
+          "amount" INTEGER NOT NULL,
+          "source" VARCHAR(50) NOT NULL,
+          "status" VARCHAR(50) NOT NULL DEFAULT 'pending',
+          "created_at" TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP
         );
       `);
       await client.query(`
@@ -268,6 +293,10 @@ export const db = {
     return getPool() !== null;
   },
 
+  getPool() {
+    return getPool();
+  },
+
   async verifyUser(
     email: string,
     passwordPlain: string,
@@ -285,6 +314,7 @@ export const db = {
             bcrypt.compare(passwordPlain, row.password_hash || ""),
           );
           if (isMatch) {
+            await p.query("UPDATE users SET is_logged_in = TRUE WHERE user_id = $1", [row.user_id]);
             return {
               userId: row.user_id,
               name: row.name,
@@ -306,6 +336,7 @@ export const db = {
         bcrypt.compare(passwordPlain, u.passwordHash || ""),
       );
       if (isMatch) {
+        (u as any).is_logged_in = true;
         const { passwordHash, ...safeUser } = u;
         return safeUser as DBUser;
       }
@@ -326,7 +357,8 @@ export const db = {
         const check = await p.query("SELECT * FROM users WHERE email = $1", [
           email,
         ]);
-        if (check.rows.length > 0)
+        if (check.rows.length > 0) {
+          await p.query("UPDATE users SET is_logged_in = TRUE WHERE user_id = $1", [check.rows[0].user_id]);
           return {
             userId: check.rows[0].user_id,
             name: check.rows[0].name,
@@ -336,10 +368,11 @@ export const db = {
             credit: check.rows[0].credits,
             createdAt: check.rows[0].created_at.toISOString(),
           };
+        }
 
         const userId = "usr_" + Date.now().toString();
         const res = await p.query(
-          "INSERT INTO users (user_id, name, email, avatar, role) VALUES ($1, $2, $3, $4, $5) RETURNING *",
+          "INSERT INTO users (user_id, name, email, avatar, role, is_logged_in) VALUES ($1, $2, $3, $4, $5, TRUE) RETURNING *",
           [userId, name, email, avatar, role],
         );
         const r = res.rows[0];
@@ -368,6 +401,7 @@ export const db = {
       };
       memoryDb.users.push(existing);
     }
+    (existing as any).is_logged_in = true;
     const { passwordHash, ...safe } = existing;
     return safe as DBUser;
   },
@@ -652,4 +686,228 @@ export const db = {
     }
     return false; // Dummy DB doesn't support persisting settings easily, so not returning false but no-oping effectively unless we add it to memoryDb. We'll just return true.
   },
+
+  async getLandingPages(): Promise<any[]> {
+    const p = getPool();
+    if (p) {
+      await ensureTablesExist(p);
+      try {
+        const res = await p.query("SELECT * FROM landing_pages ORDER BY created_at DESC");
+        return res.rows.map((row: any) => ({
+          slug: row.slug,
+          htmlContent: row.html_content,
+          createdAt: row.created_at.toISOString(),
+          updatedAt: row.updated_at.toISOString(),
+        }));
+      } catch (e) {
+        console.error("Error getLandingPages:", e);
+      }
+    }
+    return (global as any).memoryLandingPages || [];
+  },
+
+  async getLandingPage(slug: string): Promise<any | null> {
+    const p = getPool();
+    if (p) {
+      await ensureTablesExist(p);
+      try {
+        const res = await p.query("SELECT * FROM landing_pages WHERE slug = $1", [slug]);
+        if (res.rows.length > 0) {
+          const row = res.rows[0];
+          return {
+            slug: row.slug,
+            htmlContent: row.html_content,
+            createdAt: row.created_at.toISOString(),
+            updatedAt: row.updated_at.toISOString(),
+          };
+        }
+      } catch (e) {
+        console.error("Error getLandingPage:", e);
+      }
+    }
+    const pages = (global as any).memoryLandingPages || [];
+    return pages.find((p: any) => p.slug === slug) || null;
+  },
+
+  async saveLandingPage(slug: string, htmlContent: string): Promise<boolean> {
+    const p = getPool();
+    if (p) {
+      await ensureTablesExist(p);
+      try {
+        await p.query(
+          `INSERT INTO landing_pages (slug, html_content, updated_at) VALUES ($1, $2, CURRENT_TIMESTAMP)
+           ON CONFLICT (slug) DO UPDATE SET html_content = EXCLUDED.html_content, updated_at = CURRENT_TIMESTAMP`,
+          [slug, htmlContent]
+        );
+        return true;
+      } catch (e) {
+        console.error("Error saveLandingPage:", e);
+      }
+    }
+    if (!(global as any).memoryLandingPages) {
+      (global as any).memoryLandingPages = [];
+    }
+    const idx = (global as any).memoryLandingPages.findIndex((x: any) => x.slug === slug);
+    if (idx >= 0) {
+      (global as any).memoryLandingPages[idx].htmlContent = htmlContent;
+      (global as any).memoryLandingPages[idx].updatedAt = new Date().toISOString();
+    } else {
+      (global as any).memoryLandingPages.push({
+        slug,
+        htmlContent,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
+      });
+    }
+    return true;
+  },
+
+  async deleteLandingPage(slug: string): Promise<boolean> {
+    const p = getPool();
+    if (p) {
+      await ensureTablesExist(p);
+      try {
+        await p.query("DELETE FROM landing_pages WHERE slug = $1", [slug]);
+        return true;
+      } catch (e) {
+        console.error("Error deleteLandingPage:", e);
+      }
+    }
+    if ((global as any).memoryLandingPages) {
+      (global as any).memoryLandingPages = (global as any).memoryLandingPages.filter((x: any) => x.slug !== slug);
+    }
+    return true;
+  },
+
+  async logoutUser(userId: string): Promise<boolean> {
+    const p = getPool();
+    if (p) {
+      await ensureTablesExist(p);
+      try {
+        await p.query("UPDATE users SET is_logged_in = FALSE WHERE user_id = $1", [userId]);
+        return true;
+      } catch (e) {}
+    }
+    const idx = memoryDb.users.findIndex((u) => u.userId === userId);
+    if (idx >= 0) {
+      (memoryDb.users[idx] as any).is_logged_in = false;
+    }
+    return true;
+  },
+
+  async checkUserLoginStatus(email: string): Promise<boolean> {
+    const p = getPool();
+    if (p) {
+      await ensureTablesExist(p);
+      try {
+        const res = await p.query("SELECT is_logged_in FROM users WHERE email = $1", [email]);
+        if (res.rows.length > 0) {
+          return !!res.rows[0].is_logged_in;
+        }
+      } catch (e) {}
+    }
+    const u = memoryDb.users.find((x) => x.email === email);
+    if (u) {
+      return !!(u as any).is_logged_in;
+    }
+    return false;
+  },
+
+  async createTransaction(tx: {
+    id: string;
+    name: string;
+    email: string;
+    phone: string;
+    packageName: string;
+    credits: number;
+    amount: number;
+    source: string;
+  }): Promise<boolean> {
+    const p = getPool();
+    if (p) {
+      await ensureTablesExist(p);
+      try {
+        await p.query(
+          `INSERT INTO transactions (id, name, email, phone, package_name, credits, amount, source, status)
+           VALUES ($1, $2, $3, $4, $5, $6, $7, $8, 'pending')`,
+          [tx.id, tx.name, tx.email, tx.phone, tx.packageName, tx.credits, tx.amount, tx.source]
+        );
+        return true;
+      } catch (e) {
+        console.error("Error creating transaction:", e);
+      }
+    }
+    if (!(global as any).memoryTransactions) {
+      (global as any).memoryTransactions = [];
+    }
+    (global as any).memoryTransactions.push({
+      ...tx,
+      status: "pending",
+      createdAt: new Date().toISOString()
+    });
+    return true;
+  },
+
+  async completeTransaction(id: string): Promise<any | null> {
+    const p = getPool();
+    if (p) {
+      await ensureTablesExist(p);
+      try {
+        const res = await p.query(
+          `UPDATE transactions SET status = 'completed' WHERE id = $1 RETURNING *`,
+          [id]
+        );
+        if (res.rows.length > 0) {
+          const row = res.rows[0];
+          return {
+            id: row.id,
+            name: row.name,
+            email: row.email,
+            phone: row.phone,
+            packageName: row.package_name,
+            credits: row.credits,
+            amount: row.amount,
+            source: row.source,
+            status: row.status,
+            createdAt: row.created_at.toISOString()
+          };
+        }
+      } catch (e) {
+        console.error("Error completing transaction:", e);
+      }
+    }
+    if ((global as any).memoryTransactions) {
+      const tx = (global as any).memoryTransactions.find((x: any) => x.id === id);
+      if (tx) {
+        tx.status = "completed";
+        return tx;
+      }
+    }
+    return null;
+  },
+
+  async getTransactions(): Promise<any[]> {
+    const p = getPool();
+    if (p) {
+      await ensureTablesExist(p);
+      try {
+        const res = await p.query("SELECT * FROM transactions ORDER BY created_at DESC");
+        return res.rows.map((row: any) => ({
+          id: row.id,
+          name: row.name,
+          email: row.email,
+          phone: row.phone,
+          packageName: row.package_name,
+          credits: row.credits,
+          amount: row.amount,
+          source: row.source,
+          status: row.status,
+          createdAt: row.created_at.toISOString()
+        }));
+      } catch (e) {
+        console.error("Error fetching transactions:", e);
+      }
+    }
+    return (global as any).memoryTransactions || [];
+  }
 };
