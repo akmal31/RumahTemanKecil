@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/immutability */
 "use client";
 
 import React, { useState, useEffect, Suspense } from "react";
@@ -17,7 +18,7 @@ import {
   Clock,
   ExternalLink
 } from "lucide-react";
-import Navbar from "@/components/Navbar";
+import { Navbar } from "@/components/Navbar";
 
 // Interface for pricing configurations
 interface PackageInfo {
@@ -153,7 +154,12 @@ function CheckoutContent() {
       const data = await res.json();
       if (res.ok && data.success) {
         setActiveTxId(txId);
-        setShowGateway(true);
+        if (data.paymentUrl) {
+          // Redirect user securely to the official iPaymu checkout site with buyer details pre-filled and hidden
+          window.location.href = data.paymentUrl;
+        } else {
+          setShowGateway(true);
+        }
       } else {
         alert(data.error || "Gagal membuat transaksi");
       }

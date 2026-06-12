@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Inter, Plus_Jakarta_Sans } from "next/font/google";
 import "./globals.css";
+import { Suspense } from "react";
+import MetaPixel from "@/components/MetaPixel";
 
 import { db } from "@/lib/db";
 
@@ -44,6 +46,9 @@ export default async function RootLayout({
         className="min-h-screen bg-slate-50 antialiased selection:bg-blue-100 selection:text-blue-950"
         suppressHydrationWarning
       >
+        <Suspense fallback={null}>
+          <MetaPixel />
+        </Suspense>
         {children}
       </body>
     </html>

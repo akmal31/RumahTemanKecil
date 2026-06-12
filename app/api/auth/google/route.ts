@@ -7,7 +7,7 @@ export async function GET(req: NextRequest) {
     const code = url.searchParams.get("code");
 
     const appUrl = process.env.APP_URL || "http://localhost:3000";
-    const redirectUri = `${appUrl}/api/auth/google`;
+    const redirectUri = `${appUrl}/api/auth/callback/google`;
     const clientId = process.env.GOOGLE_CLIENT_ID;
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
