@@ -40,9 +40,9 @@ export async function POST(req: NextRequest) {
     const settings = await db.getSettings();
     const siteSetting = settings?.site_setting || {};
 
-    const ipaymuVa = process.env.IPAYMU_VA || siteSetting.ipaymu_va || "";
-    const ipaymuApiKey = process.env.IPAYMU_API_KEY || siteSetting.ipaymu_api_key || "";
-    const ipaymuIsSandbox = (process.env.IPAYMU_SANDBOX || siteSetting.ipaymu_is_sandbox || "true") === "true";
+    const ipaymuVa = (process.env.IPAYMU_VA || siteSetting.ipaymu_va || "").trim();
+    const ipaymuApiKey = (process.env.IPAYMU_API_KEY || siteSetting.ipaymu_api_key || "").trim();
+    const ipaymuIsSandbox = (process.env.IPAYMU_SANDBOX || siteSetting.ipaymu_is_sandbox || "true").trim() === "true";
 
     if (!ipaymuVa || !ipaymuApiKey) {
       return NextResponse.json({
