@@ -93,6 +93,8 @@ export async function GET(req: NextRequest) {
       return response;
     }
 
+    const redirectParam = url.searchParams.get("redirect") || "";
+
     if (clientId) {
       const googleAuthUrl =
         `https://accounts.google.com/o/oauth2/v2/auth?` +
@@ -102,10 +104,15 @@ export async function GET(req: NextRequest) {
           response_type: "code",
           scope: "openid profile email",
           prompt: "consent",
+          state: redirectParam,
         }).toString();
       return NextResponse.redirect(new URL(googleAuthUrl));
     } else {
-      return NextResponse.redirect(new URL("/api/auth/google/mock", appUrl));
+      const mockUrl = new URL("/api/auth/google/mock", appUrl);
+      if (redirectParam) {
+        mockUrl.searchParams.set("redirect", redirectParam);
+      }
+      return NextResponse.redirect(mockUrl);
     }
   } catch (error: any) {
     // Resolve appUrl fallback if it failed inside try block

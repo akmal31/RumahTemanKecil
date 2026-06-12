@@ -17,7 +17,18 @@ export async function GET(req: NextRequest) {
 
     const user = await db.getOrCreateUser(email, name, picture, "user");
 
-    const redirectUrl = new URL("/explore?auth_success=true", appUrl);
+    const redirectParam = url.searchParams.get("redirect") || "";
+    let redirectUrl: URL;
+    if (redirectParam) {
+      try {
+        redirectUrl = new URL(redirectParam, appUrl);
+      } catch {
+        redirectUrl = new URL(redirectParam.startsWith("/") ? redirectParam : `/${redirectParam}`, appUrl);
+      }
+      redirectUrl.searchParams.set("auth_success", "true");
+    } else {
+      redirectUrl = new URL("/explore?auth_success=true", appUrl);
+    }
     const response = NextResponse.redirect(redirectUrl);
 
     response.cookies.set("tk_user_session", JSON.stringify(user), {

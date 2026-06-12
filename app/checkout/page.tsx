@@ -59,11 +59,6 @@ function CheckoutContent() {
   // Flow State
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [activeTxId, setActiveTxId] = useState<string | null>(null);
-  const [showGateway, setShowGateway] = useState(false);
-  const [paymentMethod, setPaymentMethod] = useState<string>("qris");
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
-  const [paymentSuccess, setPaymentSuccess] = useState(false);
-  const [completedTxData, setCompletedTxData] = useState<any>(null);
 
   useEffect(() => {
     // 1. Fetch official price configuration, session, etc.
@@ -81,15 +76,13 @@ function CheckoutContent() {
           phone: session.user.phone || session.user.noHp || "",
         });
       } else {
-        // IF NOT FROM LANDING and NOT AUTHENTICATED -> Must login
-        if (!isFromLanding) {
-          router.replace(`/login?redirect=/checkout?pkg=${pkgParam}`);
-          return;
-        }
+        // Must login: redirect to login with original target package query
+        router.replace(`/login?redirect=/checkout?pkg=${pkgParam}`);
+        return;
       }
       setLoading(false);
     });
-  }, [isFromLanding, pkgParam, router]);
+  }, [pkgParam, router]);
 
   // Pricing helper based on DB settings
   const getPackageDetails = (pkgType: string): PackageInfo => {
@@ -155,10 +148,10 @@ function CheckoutContent() {
       if (res.ok && data.success) {
         setActiveTxId(txId);
         if (data.paymentUrl) {
-          // Redirect user securely to the official iPaymu checkout site with buyer details pre-filled and hidden
+          // Redirect user securely to the official iPaymu checkout site
           window.location.href = data.paymentUrl;
         } else {
-          setShowGateway(true);
+          alert("Gagal memuat link pembayaran iPaymu.");
         }
       } else {
         alert(data.error || "Gagal membuat transaksi");
@@ -168,34 +161,6 @@ function CheckoutContent() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleSimulatePayment = async () => {
-    if (!activeTxId) return;
-    setIsProcessingPayment(true);
-    
-    // Simulate payment gateway processing lag
-    setTimeout(async () => {
-      try {
-        const res = await fetch("/api/checkout/complete", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ id: activeTxId })
-        });
-        const data = await res.json();
-        if (res.ok && data.success) {
-          setCompletedTxData(data.transaction);
-          setPaymentSuccess(true);
-          setShowGateway(false);
-        } else {
-          alert("Gagal mengonfirmasi pembayaran.");
-        }
-      } catch {
-        alert("Gagal menghubungi server backend.");
-      } finally {
-        setIsProcessingPayment(false);
-      }
-    }, 2500);
   };
 
   if (loading) {
@@ -220,78 +185,8 @@ function CheckoutContent() {
           <ArrowLeft className="w-4 h-4 group-hover:-translate-x-1 transition-transform" /> Kembali
         </button>
 
-        {paymentSuccess && completedTxData ? (
-          /* Payment Completed Screen */
-          <div className="max-w-2xl mx-auto bg-slate-900 border border-slate-800 rounded-3xl p-8 shadow-2xl text-center space-y-6 animate-in fade-in zoom-in-95">
-            <div className="w-16 h-16 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center mx-auto border border-emerald-500/30">
-              <CheckCircle2 className="w-10 h-10" />
-            </div>
-
-            <div className="space-y-2">
-              <span className="px-3 py-1 bg-emerald-950/60 text-emerald-400 border border-emerald-900/30 text-xs font-bold rounded-full uppercase">
-                Pembayaran Sukses
-              </span>
-              <h2 className="text-2xl font-bold text-white font-display">Terima Kasih, {completedTxData.name}!</h2>
-              <p className="text-slate-400 text-sm">
-                Transaksi <span className="font-mono text-slate-300 font-bold">{completedTxData.id}</span> telah selesai diproses.
-              </p>
-            </div>
-
-            {/* Email Notification Simulator View */}
-            <div className="bg-slate-950 rounded-2xl p-6 border border-slate-800 text-left space-y-4">
-              <div className="flex items-center gap-3 border-b border-slate-800 pb-3">
-                <div className="w-8 h-8 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
-                  <Mail className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-xs text-slate-300">Simulasi Resit Email Terkirim</h4>
-                  <p className="text-[10px] text-slate-500">Dikirim langsung ke: <span className="text-indigo-400 font-semibold">{completedTxData.email}</span></p>
-                </div>
-              </div>
-
-              <div className="space-y-3 font-sans text-xs text-slate-300 leading-relaxed">
-                <p>Halo <strong>{completedTxData.name}</strong>,</p>
-                <p>Pembayaran sebesar <strong>Rp {completedTxData.amount.toLocaleString("id-ID")}</strong> untuk pembelian <strong>{completedTxData.packageName} (+{completedTxData.credits} Credits)</strong> telah kami terima.</p>
-                
-                {completedTxData.temporaryPassword ? (
-                  <div className="p-3.5 bg-indigo-950/40 border border-indigo-900/40 rounded-xl space-y-1.5">
-                    <p className="text-indigo-300 font-semibold text-[11px] uppercase tracking-wider">🔐 Akun Baru Terbuat!</p>
-                    <p className="text-slate-400 text-[10px]">Gunakan detail akun berikut untuk masuk ke website TemanKecil:</p>
-                    <div className="font-mono text-slate-200">
-                      <div>Email: <strong className="text-white">{completedTxData.email}</strong></div>
-                      <div>Password Sementara: <strong className="text-white select-all">{completedTxData.temporaryPassword}</strong></div>
-                    </div>
-                    <p className="text-slate-500 text-[9px] pt-1">*Segera ubah kata sandi Anda setelah masuk demi keamanan data.</p>
-                  </div>
-                ) : (
-                  <p>Token sejumlah <strong>{completedTxData.credits} credits</strong> telah otomatis ditambahkan ke saldo akun Anda. Silakan muat ulang atau buka dashboard Anda.</p>
-                )}
-                
-                <div className="text-[10px] text-slate-500 pt-2 border-t border-slate-900 flex justify-between items-center">
-                  <span>TemanKecil Billing Team</span>
-                  <span>Status: LUNAS/SUCCESS</span>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-3 pt-4">
-              <button
-                onClick={() => router.replace(user ? "/dashboard" : "/login")}
-                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all shadow-lg"
-              >
-                {user ? "Masuk ke Dashboard" : "Masuk ke Akun Anda"}
-              </button>
-              <button
-                onClick={() => router.replace("/")}
-                className="flex-1 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold rounded-xl transition-all"
-              >
-                Kembali ke Beranda
-              </button>
-            </div>
-          </div>
-        ) : (
-          /* Checkout Billing and Form Screen */
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start animate-in fade-in">
+        {/* Checkout Billing and Form Screen */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 items-start animate-in fade-in">
             {/* Left Card: Payment Information Form */}
             <div className="lg:col-span-2 bg-slate-900 border border-slate-800 rounded-3xl p-6 sm:p-8 space-y-6 shadow-xl">
               <div>
@@ -481,126 +376,8 @@ function CheckoutContent() {
               </div>
             </div>
           </div>
-        )}
-      </div>
-
-      {/* MIDTRANS / XENDIT STYLE GATEWAY SIMULATOR MODAL */}
-      {showGateway && (
-        <div className="fixed inset-0 bg-black/80 backdrop-blur-md z-[150] flex items-center justify-center p-4">
-          <div className="bg-slate-900 border border-indigo-500/20 rounded-3xl w-full max-w-lg shadow-2xl overflow-hidden border border-slate-800 animate-in fade-in zoom-in-95">
-            {/* Header */}
-            <div className="bg-slate-950 p-6 border-b border-slate-800 flex justify-between items-center">
-              <div className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded bg-indigo-600 flex items-center justify-center text-xs font-bold text-white uppercase tracking-widest font-mono">
-                  TK
-                </div>
-                <div>
-                  <h3 className="font-extrabold text-sm text-white">Simulator Gerbang Pembayaran</h3>
-                  <p className="text-[10px] text-slate-500">Transaksi ID Segera: {activeTxId}</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowGateway(false)}
-                className="text-slate-400 hover:text-white"
-              >
-                ✕ Batal
-              </button>
-            </div>
-
-            {/* Body */}
-            <div className="p-6 space-y-6">
-              <div className="bg-indigo-950/40 p-4 border border-indigo-500/20 rounded-2xl flex justify-between items-center">
-                <div>
-                  <span className="text-[10px] uppercase font-bold text-indigo-400">Jumlah Tagihan</span>
-                  <div className="text-xl font-black text-white">Rp {activePackage.price.toLocaleString("id-ID")}</div>
-                </div>
-                <div className="text-right">
-                  <span className="text-[10px] uppercase font-bold text-slate-500">Product</span>
-                  <div className="text-xs font-bold text-slate-300">{activePackage.name}</div>
-                </div>
-              </div>
-
-              {/* Payment Select Options */}
-              <div className="space-y-3">
-                <label className="block text-[11px] font-bold text-slate-400 uppercase tracking-widest">
-                  Pilih Saluran Pembayaran
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("qris")}
-                    className={`p-3 rounded-xl border text-left flex gap-3 items-center transition-all ${paymentMethod === "qris" ? "bg-slate-820 border-indigo-500 text-white" : "bg-slate-950/40 border-slate-800 hover:border-slate-705"}`}
-                  >
-                    <div className="w-8 h-8 rounded bg-white flex items-center justify-center shrink-0">
-                      <span className="text-indigo-900 font-extrabold text-xs font-mono">QRIS</span>
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs text-white">QRIS GoPay/Dana</div>
-                      <div className="text-[10px] text-slate-500">Bayar instan via scan QR</div>
-                    </div>
-                  </button>
-
-                  <button
-                    type="button"
-                    onClick={() => setPaymentMethod("va")}
-                    className={`p-3 rounded-xl border text-left flex gap-3 items-center transition-all ${paymentMethod === "va" ? "bg-slate-820 border-indigo-500 text-white" : "bg-slate-950/40 border-slate-800 hover:border-slate-705"}`}
-                  >
-                    <div className="w-8 h-8 rounded bg-white flex items-center justify-center shrink-0">
-                      <span className="text-indigo-900 font-extrabold text-[10px] font-mono">BCA VA</span>
-                    </div>
-                    <div>
-                      <div className="font-bold text-xs text-white">Transfer Virtual Account</div>
-                      <div className="text-[10px] text-slate-500">Cek otomatis 24 Jam</div>
-                    </div>
-                  </button>
-                </div>
-              </div>
-
-              {/* Gateway Instructions */}
-              <div className="bg-slate-950 rounded-xl p-4 border border-slate-850 flex gap-3 items-start">
-                <Clock className="w-5 h-5 text-amber-500 shrink-0 mt-0.5" />
-                <div className="text-[11px] text-slate-400 leading-relaxed">
-                  <p className="font-bold text-slate-300">Instruksi Pembayaran:</p>
-                  {paymentMethod === "qris" ? (
-                    <p>Cukup klik tombol simulasikan sukses untuk memproses pembelian instan ini. Saldo token akan langsung dialokasikan ke email pembeli.</p>
-                  ) : (
-                    <p>Gunakan Kode VA <code className="bg-slate-900 px-1 py-0.5 rounded text-indigo-400 font-bold font-mono">1120038892716</code> pada aplikasi banking Anda untuk melakukan simulasi transfer.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="p-6 bg-slate-950 border-t border-slate-800 flex gap-3 justify-end rounded-b-3xl">
-              <button
-                type="button"
-                onClick={() => setShowGateway(false)}
-                className="px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-slate-400 rounded-xl text-xs font-bold"
-              >
-                Kembali
-              </button>
-              <button
-                type="button"
-                onClick={handleSimulatePayment}
-                disabled={isProcessingPayment}
-                className="px-5 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white rounded-xl text-xs font-bold flex items-center gap-2 cursor-pointer disabled:opacity-50"
-              >
-                {isProcessingPayment ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                    Memproses Simulasi...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="w-4 h-4" /> Simulasikan Sukses Bayar
-                  </>
-                )}
-              </button>
-            </div>
-          </div>
         </div>
-      )}
-    </div>
+      </div>
   );
 }
 

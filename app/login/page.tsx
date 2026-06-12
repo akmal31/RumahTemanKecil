@@ -1,10 +1,13 @@
 "use client";
 import { Navbar } from "@/components/Navbar";
-import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useState, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 
-export default function Login() {
+function LoginContent() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const redirect = searchParams.get("redirect") || "";
+
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
@@ -20,7 +23,9 @@ export default function Login() {
       });
       const data = await res.json();
       if (res.ok && data.success) {
-        if (data.user?.role === "admin") {
+        if (redirect) {
+          router.push(redirect);
+        } else if (data.user?.role === "admin") {
           router.push("/admin");
         } else {
           router.push("/dashboard");
@@ -31,6 +36,13 @@ export default function Login() {
     } catch (err) {
       setError("Kesalahan jaringan");
     }
+  };
+
+  const handleGoogleLogin = () => {
+    const googleUrl = redirect
+      ? `/api/auth/google?redirect=${encodeURIComponent(redirect)}`
+      : "/api/auth/google";
+    window.location.href = googleUrl;
   };
 
   return (
@@ -99,7 +111,7 @@ export default function Login() {
 
           <button
             type="button"
-            onClick={() => window.location.href = "/api/auth/google"}
+            onClick={handleGoogleLogin}
             className="w-full py-3.5 bg-slate-950 border border-slate-800 hover:bg-slate-900 text-white font-bold rounded-xl transition-all flex items-center justify-center gap-3 shadow-lg"
           >
             <svg className="w-5 h-5 text-indigo-400" viewBox="0 0 24 24">
@@ -125,5 +137,17 @@ export default function Login() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-slate-950 flex items-center justify-center">
+        <div className="text-slate-400 font-mono text-sm">Memuat halaman masuk...</div>
+      </div>
+    }>
+      <LoginContent />
+    </Suspense>
   );
 }

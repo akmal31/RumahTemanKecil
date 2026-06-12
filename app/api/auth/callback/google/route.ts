@@ -20,6 +20,19 @@ export async function GET(req: NextRequest) {
       return NextResponse.redirect(new URL("/?auth_error=missing_code", appUrl));
     }
 
+    const stateParam = url.searchParams.get("state") || "";
+    let targetUrl: URL;
+    if (stateParam) {
+      try {
+        targetUrl = new URL(stateParam, appUrl);
+      } catch {
+        targetUrl = new URL(stateParam.startsWith("/") ? stateParam : `/${stateParam}`, appUrl);
+      }
+      targetUrl.searchParams.set("auth_success", "true");
+    } else {
+      targetUrl = new URL("/explore?auth_success=true", appUrl);
+    }
+
     // Fallback if client credentials are not defined
     if (!clientId || !clientSecret) {
       const fallbackEmail = "devsession@gmail.com";
@@ -31,9 +44,7 @@ export async function GET(req: NextRequest) {
         "user",
       );
 
-      const response = NextResponse.redirect(
-        new URL("/explore?auth_success=true", appUrl),
-      );
+      const response = NextResponse.redirect(targetUrl);
       response.cookies.set("tk_user_session", JSON.stringify(user), {
         path: "/",
         maxAge: 60 * 60 * 24 * 7,
@@ -89,9 +100,7 @@ export async function GET(req: NextRequest) {
       "user",
     );
 
-    const response = NextResponse.redirect(
-      new URL("/explore?auth_success=true", appUrl),
-    );
+    const response = NextResponse.redirect(targetUrl);
     response.cookies.set("tk_user_session", JSON.stringify(user), {
       path: "/",
       maxAge: 60 * 60 * 24 * 7,

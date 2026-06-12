@@ -44,61 +44,72 @@ export async function POST(req: NextRequest) {
     const ipaymuApiKey = process.env.IPAYMU_API_KEY || siteSetting.ipaymu_api_key || "";
     const ipaymuIsSandbox = (process.env.IPAYMU_SANDBOX || siteSetting.ipaymu_is_sandbox || "true") === "true";
 
-    let paymentUrl = "";
-
-    // If real iPaymu credentials present, talk to iPaymu API
-    if (ipaymuVa && ipaymuApiKey) {
-      try {
-        const url = ipaymuIsSandbox
-          ? "https://sandbox.ipaymu.com/api/v2/payment"
-          : "https://api.ipaymu.com/api/v2/payment";
-
-        const appUrl = process.env.APP_URL || new URL(req.url).origin;
-
-        const body = {
-          product: [packageName],
-          qty: [1],
-          price: [amount],
-          returnUrl: `${appUrl}/checkout/complete?id=${id}`,
-          cancelUrl: `${appUrl}/checkout`,
-          notifyUrl: `${appUrl}/api/checkout/notify`,
-          buyerName: name,
-          buyerEmail: email,
-          buyerPhone: phone,
-          referenceId: id
-        };
-
-        const jsonBody = JSON.stringify(body);
-        
-        // Calculate HMAC SHA256 Signature for iPaymu
-        const bodyHash = crypto.createHash("sha256").update(jsonBody).digest("hex").toLowerCase();
-        const stringToSign = `${ipaymuVa}.${bodyHash}.POST.${ipaymuApiKey}`;
-        const signature = crypto.createHmac("sha256", ipaymuApiKey).update(stringToSign).digest("hex");
-
-        const response = await fetch(url, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "va": ipaymuVa,
-            "signature": signature
-          },
-          body: jsonBody,
-          signal: AbortSignal.timeout(8000)
-        });
-
-        const responseData = await response.json().catch(() => ({}));
-
-        if (response.ok && responseData.Status === 200 && responseData.Data?.Url) {
-          paymentUrl = responseData.Data.Url;
-        } else {
-          console.warn("iPaymu gateway declined link generation. Falling back to local high-fidelity simulator mode:", responseData);
-        }
-      } catch (err: any) {
-        console.warn("iPaymu communication failed or timed out. Falling back to local high-fidelity simulator mode:", err.message || err);
-      }
+    if (!ipaymuVa || !ipaymuApiKey) {
+      return NextResponse.json({
+        success: false,
+        error: "Konfigurasi Gateway iPaymu belum diatur! Silakan atur No Virtual Account dan API Secret Key Anda di halaman Admin -> Settings -> iPaymu Gateway."
+      }, { status: 400 });
     }
 
-    // Returns the status & optional actual redirection url
+    let paymentUrl = "";
+
+    try {
+      const url = ipaymuIsSandbox
+        ? "https://sandbox.ipaymu.com/api/v2/payment"
+        : "https://api.ipaymu.com/api/v2/payment";
+
+      const appUrl = process.env.APP_URL || new URL(req.url).origin;
+
+      const body = {
+        product: [packageName],
+        qty: [1],
+        price: [amount],
+        returnUrl: `${appUrl}/checkout/complete?id=${id}`,
+        cancelUrl: `${appUrl}/checkout`,
+        notifyUrl: `${appUrl}/api/checkout/notify`,
+        buyerName: name,
+        buyerEmail: email,
+        buyerPhone: phone,
+        referenceId: id
+      };
+
+      const jsonBody = JSON.stringify(body);
+      
+      // Calculate HMAC SHA256 Signature for iPaymu
+      const bodyHash = crypto.createHash("sha256").update(jsonBody).digest("hex").toLowerCase();
+      const stringToSign = `${ipaymuVa}.${bodyHash}.POST.${ipaymuApiKey}`;
+      const signature = crypto.createHmac("sha256", ipaymuApiKey).update(stringToSign).digest("hex");
+
+      const response = await fetch(url, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "va": ipaymuVa,
+          "signature": signature
+        },
+        body: jsonBody,
+        signal: AbortSignal.timeout(10000)
+      });
+
+      const responseData = await response.json().catch(() => ({}));
+
+      if (response.ok && responseData.Status === 200 && responseData.Data?.Url) {
+        paymentUrl = responseData.Data.Url;
+      } else {
+        const errorMsg = responseData.Message || "Gateway iPaymu menolak pembuatan link transaksi.";
+        return NextResponse.json({
+          success: false,
+          error: `Gagal membuat link pembayaran iPaymu: ${errorMsg} (Status: ${responseData.Status || response.status})`
+        }, { status: 400 });
+      }
+    } catch (err: any) {
+      return NextResponse.json({
+        success: false,
+        error: `Gagal berkomunikasi dengan server iPaymu: ${err.message || err}`
+      }, { status: 502 });
+    }
+
+    // Returns the status & actual redirection url
     return NextResponse.json({ success: true, id, paymentUrl });
   } catch (error: any) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
