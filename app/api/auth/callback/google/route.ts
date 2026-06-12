@@ -6,7 +6,9 @@ export async function GET(req: NextRequest) {
     const url = new URL(req.url);
     const code = url.searchParams.get("code");
 
-    const origin = new URL(req.url).origin;
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
+    const proto = req.headers.get("x-forwarded-proto") || "http";
+    const origin = `${proto}://${host}`;
     const appUrl = (process.env.APP_URL && process.env.APP_URL !== "MY_APP_URL") 
       ? process.env.APP_URL 
       : origin;
@@ -15,7 +17,7 @@ export async function GET(req: NextRequest) {
     const clientSecret = process.env.GOOGLE_CLIENT_SECRET;
 
     if (!code) {
-      return NextResponse.redirect(new URL("/?auth_error=missing_code", req.url));
+      return NextResponse.redirect(new URL("/?auth_error=missing_code", appUrl));
     }
 
     // Fallback if client credentials are not defined
@@ -30,7 +32,7 @@ export async function GET(req: NextRequest) {
       );
 
       const response = NextResponse.redirect(
-        new URL("/explore?auth_success=true", req.url),
+        new URL("/explore?auth_success=true", appUrl),
       );
       response.cookies.set("tk_user_session", JSON.stringify(user), {
         path: "/",
@@ -56,7 +58,7 @@ export async function GET(req: NextRequest) {
 
     if (!tokenRes.ok) {
       return NextResponse.redirect(
-        new URL(`/?auth_error=exchange_failed`, req.url),
+        new URL(`/?auth_error=exchange_failed`, appUrl),
       );
     }
 
@@ -70,13 +72,13 @@ export async function GET(req: NextRequest) {
 
     if (!userRes.ok) {
       return NextResponse.redirect(
-        new URL(`/?auth_error=profile_failed`, req.url),
+        new URL(`/?auth_error=profile_failed`, appUrl),
       );
     }
 
     const googleUser = await userRes.json();
     if (!googleUser.email) {
-      return NextResponse.redirect(new URL(`/?auth_error=no_email`, req.url));
+      return NextResponse.redirect(new URL(`/?auth_error=no_email`, appUrl));
     }
 
     const name = googleUser.name || "Google User";
@@ -88,7 +90,7 @@ export async function GET(req: NextRequest) {
     );
 
     const response = NextResponse.redirect(
-      new URL("/explore?auth_success=true", req.url),
+      new URL("/explore?auth_success=true", appUrl),
     );
     response.cookies.set("tk_user_session", JSON.stringify(user), {
       path: "/",
@@ -98,6 +100,12 @@ export async function GET(req: NextRequest) {
     });
     return response;
   } catch (error: any) {
-    return NextResponse.redirect(new URL(`/?auth_error=server_error`, req.url));
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
+    const proto = req.headers.get("x-forwarded-proto") || "http";
+    const origin = `${proto}://${host}`;
+    const appUrl = (process.env.APP_URL && process.env.APP_URL !== "MY_APP_URL") 
+      ? process.env.APP_URL 
+      : origin;
+    return NextResponse.redirect(new URL(`/?auth_error=server_error`, appUrl));
   }
 }
