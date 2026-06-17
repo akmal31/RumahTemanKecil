@@ -24,7 +24,7 @@ export default function AdminDashboard() {
     "dashboard" | "tools" | "settings" | "users" | "landing_page" | "transactions"
   >("dashboard");
   const [settingsSubTab, setSettingsSubTab] = useState<
-    "branding" | "showcase" | "categories" | "testimonials" | "pricing" | "tutorials"
+    "branding" | "showcase" | "categories" | "testimonials" | "pricing" | "tutorials" | "ipaymu"
   >("branding");
   const [tools, setTools] = useState<any[]>([]);
   const [users, setUsers] = useState<any[]>([]);
@@ -814,6 +814,17 @@ export default function AdminDashboard() {
                 >
                   Tutorial Video
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setSettingsSubTab("ipaymu")}
+                  className={`flex-1 sm:flex-initial px-5 py-3 text-sm font-semibold rounded-xl transition-all cursor-pointer ${
+                    settingsSubTab === "ipaymu"
+                      ? "bg-indigo-600 border border-indigo-500 text-white shadow-lg shadow-indigo-900/20"
+                      : "text-slate-400 hover:text-white hover:bg-slate-805 border border-transparent"
+                  }`}
+                >
+                  iPaymu Gateway
+                </button>
               </div>
 
               {/* Basic Info */}
@@ -1506,6 +1517,113 @@ export default function AdminDashboard() {
                       className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold mt-4"
                     >
                       Simpan Konfigurasi Tutorial
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Configure iPaymu Gateway */}
+              {settingsSubTab === "ipaymu" && (
+                <div id="ipaymu-config-card" className="bg-slate-900 border border-slate-800 rounded-2xl p-6 space-y-6 animate-in fade-in">
+                  <div className="border-b border-slate-800 pb-4">
+                    <h3 className="text-lg font-bold text-white">
+                      Integrasi Pembayaran iPaymu
+                    </h3>
+                    <p className="text-slate-400 text-xs mt-1">
+                      Konfigurasikan nomor Virtual Account dan API Key iPaymu Anda untuk menerima pembayaran aslinya secara instan.
+                    </p>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2">
+                        iPaymu Nomor Virtual Account (VA)
+                      </label>
+                      <input
+                        id="ipaymu-va-input"
+                        type="text"
+                        value={settings.site_setting?.ipaymu_va ?? ""}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            site_setting: {
+                              ...settings.site_setting,
+                              ipaymu_va: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Contoh: 1179000XXXXXXXXX"
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-white text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2">
+                        iPaymu API Secret Key
+                      </label>
+                      <input
+                        id="ipaymu-key-input"
+                        type="password"
+                        value={settings.site_setting?.ipaymu_api_key ?? ""}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            site_setting: {
+                              ...settings.site_setting,
+                              ipaymu_api_key: e.target.value,
+                            },
+                          })
+                        }
+                        placeholder="Masukkan API Secret Key dari Dashboard iPaymu Anda"
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-white text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-bold text-slate-400 mb-2">
+                        Mode Lingkungan iPaymu (Sandbox vs Production)
+                      </label>
+                      <select
+                        id="ipaymu-sandbox-select"
+                        value={settings.site_setting?.ipaymu_is_sandbox ?? "true"}
+                        onChange={(e) =>
+                          setSettings({
+                            ...settings,
+                            site_setting: {
+                              ...settings.site_setting,
+                              ipaymu_is_sandbox: e.target.value,
+                            },
+                          })
+                        }
+                        className="w-full bg-slate-950 border border-slate-800 py-3 px-4 rounded-xl focus:border-indigo-500 focus:outline-none text-slate-200 text-sm cursor-pointer"
+                      >
+                        <option value="true">Sandbox Mode (Pengujian / Simulasi Uang Mainan)</option>
+                        <option value="false">Production Mode (Uang Asli / Gerbang Live)</option>
+                      </select>
+                    </div>
+
+                    <div className="p-4 bg-indigo-950/30 border border-indigo-900/30 rounded-xl space-y-2">
+                      <h4 className="font-bold text-xs text-indigo-300 uppercase tracking-widest flex items-center gap-1.5">
+                        💡 Informasi Integrasi Callbacks:
+                      </h4>
+                      <p className="text-slate-400 text-xs leading-relaxed">
+                        Pastikan Anda telah mengisi informasi ini di dashboard iPaymu agar transaksi otomatis terverifikasi sistem:
+                      </p>
+                      <div className="font-mono text-slate-300 text-[11px] space-y-1 bg-slate-950 p-3 rounded-lg border border-slate-800">
+                        <div>Nama Callback / Notification IPN: <strong className="text-indigo-400">Pasti Mengarah ke Website Anda</strong></div>
+                        <div>Target Notification Url (IPN): <span className="text-white select-all">{"[Website_Domain]"} /api/checkout/notify</span></div>
+                        <div>Return URL (Sukses): <span className="text-white select-all">{"[Website_Domain]"} /checkout/complete</span></div>
+                      </div>
+                    </div>
+
+                    <button
+                      id="save-ipaymu-cfg-btn"
+                      onClick={() =>
+                        handleSaveSettings("site_setting", settings.site_setting)
+                      }
+                      className="px-5 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-sm font-bold mt-4 cursor-pointer"
+                    >
+                      Simpan Konfigurasi iPaymu
                     </button>
                   </div>
                 </div>

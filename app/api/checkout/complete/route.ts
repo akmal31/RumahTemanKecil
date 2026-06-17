@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
+import { sendMetaEvent } from "@/lib/meta-tracker";
 
 // Helper to update password_hash on guest user creations
 async function setTemporaryGuestPassword(userId: string) {
@@ -35,6 +36,20 @@ export async function POST(req: NextRequest) {
     if (!tx) {
       return NextResponse.json({ success: false, error: "Transaction not found." }, { status: 404 });
     }
+
+    // Fire Meta Conversions API (Purchase) event
+    await sendMetaEvent(
+      "Purchase",
+      { email: tx.email, phone: tx.phone, name: tx.name, userId: tx.email },
+      {
+        value: Number(tx.amount),
+        currency: "IDR",
+        content_name: tx.packageName,
+        content_category: "Tokens",
+        content_ids: [tx.id]
+      },
+      req.url
+    );
 
     // 1. Get or Create user based on email (creates user if they don't exist)
     const user = await db.getOrCreateUser(

@@ -304,7 +304,7 @@ export default function Home() {
                 </ul>
               </div>
               <Link
-                href="/dashboard"
+                href="/checkout?pkg=starter"
                 className="block w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-center text-xs font-bold transition-all"
               >
                 Top-up Starter
@@ -341,7 +341,7 @@ export default function Home() {
                 </ul>
               </div>
               <Link
-                href="/dashboard"
+                href="/checkout?pkg=pro"
                 className="block w-full py-2.5 px-4 bg-indigo-600 hover:bg-indigo-500 text-white rounded-xl text-center text-xs font-bold transition-all shadow-lg shadow-indigo-900/20"
               >
                 Top-up Pro
@@ -353,7 +353,7 @@ export default function Home() {
               <div>
                 <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Max Elite</span>
                 <div className="flex items-baseline justify-start gap-1 my-4">
-                  <span className="text-sm font-medium text-slate-400">Rp</span>
+                  <span className="text-sm font-medium text-slate-400 font-mono">Rp</span>
                   <span className="text-4xl font-extrabold text-white font-display">
                     {parseInt(settings?.site_setting?.max_price || "179000").toLocaleString("id-ID")}
                   </span>
@@ -375,7 +375,7 @@ export default function Home() {
                 </ul>
               </div>
               <Link
-                href="/dashboard"
+                href="/checkout?pkg=max"
                 className="block w-full py-2.5 px-4 bg-slate-800 hover:bg-slate-700 text-white rounded-xl text-center text-xs font-bold transition-all"
               >
                 Top-up Max

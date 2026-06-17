@@ -20,7 +20,10 @@ export async function GET(
     const landingPage = await db.getLandingPage(slug);
     if (!landingPage) {
       // If no page matches, redirect to homepage cleanly
-      return NextResponse.redirect(new URL("/", req.url));
+      const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
+      const proto = req.headers.get("x-forwarded-proto") || "http";
+      const origin = `${proto}://${host}`;
+      return NextResponse.redirect(new URL("/", origin));
     }
 
     // Serve raw, custom-uploaded HTML with proper headers
@@ -32,6 +35,9 @@ export async function GET(
       },
     });
   } catch (error) {
-    return NextResponse.redirect(new URL("/", req.url));
+    const host = req.headers.get("x-forwarded-host") || req.headers.get("host") || "localhost:3000";
+    const proto = req.headers.get("x-forwarded-proto") || "http";
+    const origin = `${proto}://${host}`;
+    return NextResponse.redirect(new URL("/", origin));
   }
 }
